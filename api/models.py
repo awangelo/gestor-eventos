@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.db.models import Q, F
 from django.contrib.auth.models import AbstractUser
@@ -18,7 +20,6 @@ class PerfilChoices(models.TextChoices):
     PROFESSOR = "PROFESSOR", "Professor"
     ORGANIZADOR = "ORGANIZADOR", "Organizador"
     ADMIN = "ADMIN", "Admin"
-    VISITANTE = "VISITANTE", "Visitante"
 
 
 class Usuario(AbstractUser):
@@ -68,6 +69,12 @@ class TipoEventoChoices(models.TextChoices):
     OUTRO = "OUTRO", "Outro"
 
 
+class InscricaoStatus(models.TextChoices):
+    PENDENTE = "PENDENTE", "Pendente"
+    CONFIRMADA = "CONFIRMADA", "Confirmada"
+    CANCELADA = "CANCELADA", "Cancelada"
+
+
 class Evento(models.Model):
     tipo = models.CharField(max_length=20, choices=TipoEventoChoices.choices)
     data_inicio = models.DateField()
@@ -110,3 +117,134 @@ class Evento(models.Model):
 
     def __str__(self):
         return f"{self.tipo} - {self.local} ({self.data_inicio})"
+
+    @property
+    def vagas_disponiveis(self) -> int:
+        confirmadas = self.inscricoes.filter(status=InscricaoStatus.CONFIRMADA).count()
+        return max(self.capacidade - confirmadas, 0)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class Inscricao(models.Model):
+    evento = models.ForeignKey(
+        Evento,
+        on_delete=models.CASCADE,
+        related_name="inscricoes",
+    )
+    participante = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name="inscricoes",
+        limit_choices_to=Q(perfil__in=[PerfilChoices.ALUNO, PerfilChoices.PROFESSOR])
+    )
+    status = models.CharField(
+        max_length=15,
+        choices=InscricaoStatus.choices,
+        default=InscricaoStatus.PENDENTE,
+    )
+    data_inscricao = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    presenca_confirmada = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("evento", "participante")
+        indexes = [
+            models.Index(fields=["evento", "status"]),
+            models.Index(fields=["participante"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                name="inscricao_status_valido",
+                check=Q(status__in=[choice[0] for choice in InscricaoStatus.choices])
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.participante and self.participante.perfil not in [
+            PerfilChoices.ALUNO,
+            PerfilChoices.PROFESSOR,
+        ]:
+            raise ValidationError({
+                "participante": "Inscrições só são permitidas para alunos ou professores."
+            })
+
+        if not self.evento_id:
+            return
+
+        if self.status == InscricaoStatus.CONFIRMADA:
+            confirmadas = self.evento.inscricoes.filter(status=InscricaoStatus.CONFIRMADA)
+            if self.pk:
+                confirmadas = confirmadas.exclude(pk=self.pk)
+            if confirmadas.count() >= self.evento.capacidade:
+                raise ValidationError({
+                    "evento": "Capacidade máxima atingida para este evento."
+                })
+
+        if self.presenca_confirmada and self.status != InscricaoStatus.CONFIRMADA:
+            raise ValidationError({
+                "presenca_confirmada": "A presença só pode ser confirmada para inscrições confirmadas."
+            })
+
+    def __str__(self):
+        return f"{self.participante} -> {self.evento}"
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class Certificado(models.Model):
+    inscricao = models.OneToOneField(
+        Inscricao,
+        on_delete=models.CASCADE,
+        related_name="certificado"
+    )
+    emitido_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        related_name="certificados_emitidos",
+        limit_choices_to=Q(perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR])
+    )
+    codigo = models.CharField(
+        max_length=36,
+        unique=True,
+        editable=False,
+        default=uuid.uuid4,
+    )
+    carga_horaria = models.PositiveIntegerField(help_text="Carga horária em horas.")
+    emitido_em = models.DateTimeField(auto_now_add=True)
+    validade = models.DateField(null=True, blank=True)
+    observacoes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-emitido_em"]
+        indexes = [
+            models.Index(fields=["codigo"]),
+            models.Index(fields=["emitido_por"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.inscricao.status != InscricaoStatus.CONFIRMADA:
+            raise ValidationError({
+                "inscricao": "Certificados só podem ser emitidos para inscrições confirmadas."
+            })
+        if not self.inscricao.presenca_confirmada:
+            raise ValidationError({
+                "inscricao": "Confirme a presença antes de emitir o certificado."
+            })
+        if self.emitido_por.perfil not in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+            raise ValidationError({
+                "emitido_por": "Somente administradores ou organizadores podem emitir certificados."
+            })
+
+    def __str__(self):
+        return f"Certificado {self.codigo} - {self.inscricao.participante}"
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
