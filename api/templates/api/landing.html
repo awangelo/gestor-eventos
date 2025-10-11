@@ -1,0 +1,43 @@
+{% extends 'api/base.html' %}
+
+{% block title %}SGEA · Gestão de Eventos Acadêmicos{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Gerencie eventos acadêmicos com facilidade</h1>
+    <p>Cadastre usuários, organize eventos, controle inscrições e emita certificados em um único lugar.</p>
+    <div class="hero-actions">
+        <a class="btn primary" href="#fluxos">Ver fluxo principal</a>
+        <a class="btn" href="#funcionalidades">Funcionalidades</a>
+    </div>
+</section>
+
+<section id="funcionalidades" class="card-grid">
+    <article class="card">
+        <h2>Cadastro de Usuários</h2>
+        <p>Perfis diferenciados para alunos, professores, organizadores e administradores com validações específicas.</p>
+    </article>
+    <article class="card">
+        <h2>Gestão de Eventos</h2>
+        <p>Controle datas, locais, capacidade e organizadores responsáveis mantendo a agenda sempre atualizada.</p>
+    </article>
+    <article class="card">
+        <h2>Inscrições</h2>
+        <p>Acompanhe participantes por evento, confirme presença e monitore vagas disponíveis em tempo real.</p>
+    </article>
+    <article class="card">
+        <h2>Certificados</h2>
+        <p>Emitir certificados para inscrições confirmadas com presença registrada, garantindo rastreabilidade.</p>
+    </article>
+</section>
+
+<section id="fluxos" class="flow">
+    <h2>Fluxo resumido</h2>
+    <ol>
+        <li>Organizador cria o evento com capacidade e período.</li>
+        <li>Alunos e professores realizam a inscrição.</li>
+        <li>Após o evento, a presença é confirmada.</li>
+        <li>Certificados ficam disponíveis para participantes elegíveis.</li>
+    </ol>
+</section>
+{% endblock %}

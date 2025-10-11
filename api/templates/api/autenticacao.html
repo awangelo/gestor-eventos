@@ -1,0 +1,36 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Protótipo · Autenticação{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Tela de autenticação</h1>
+    <p>Interface unificada para login e recuperação de acesso ao SGEA. O layout destaca o uso de credenciais personalizadas por perfil.</p>
+</section>
+
+<div class="prototype-card auth-card">
+    <span class="badge">Acesso ao sistema</span>
+    <form>
+        <div class="form-group">
+            <label for="login-username">Usuário ou e-mail</label>
+            <input id="login-username" type="text" placeholder="seu.usuario">
+        </div>
+        <div class="form-group">
+            <label for="login-password">Senha</label>
+            <input id="login-password" type="password" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox"> Permanecer conectado
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn primary">Entrar</button>
+            <a class="btn secondary" href="#">Acessar como convidado</a>
+        </div>
+        <p class="muted" style="margin-top: 1rem;">
+            Esqueceu a senha? <a class="link-inline" href="#">Solicitar redefinição</a>
+        </p>
+    </form>
+</div>
+{% endblock %}

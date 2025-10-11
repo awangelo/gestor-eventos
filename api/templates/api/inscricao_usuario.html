@@ -1,0 +1,82 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Protótipo · Inscrição de Usuários{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Inscrição de usuários em eventos</h1>
+    <p>Pessoas com perfil de aluno ou professor escolhem um evento disponível, verificam vagas e confirmam a inscrição. O layout evidencia o controle de status e presença.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card">
+        <span class="badge">Seleção do evento</span>
+        <form>
+            <div class="form-group">
+                <label for="inscricao-evento">Evento</label>
+                <select id="inscricao-evento">
+                    <option value="">Escolha um evento</option>
+                    <option>Semana Acadêmica de Tecnologia · 12/11 a 14/11</option>
+                    <option>Palestra: Inovações em Ensino · 10/11</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="inscricao-usuario">Participante</label>
+                <select id="inscricao-usuario">
+                    <option value="">Selecionar usuário</option>
+                    <option>Bruno Aluno · UnB</option>
+                    <option>Carla Professora · IFB</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="inscricao-status">Status</label>
+                <select id="inscricao-status">
+                    <option>Confirmada</option>
+                    <option>Pendente</option>
+                    <option>Cancelada</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox"> Presença confirmada
+                </label>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn primary">Atualizar inscrição</button>
+                <button type="button" class="btn secondary">Cancelar inscrição</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="prototype-card">
+        <span class="badge">Mapeamento de vagas</span>
+        <table class="table-simulated">
+            <thead>
+                <tr>
+                    <th>Evento</th>
+                    <th>Confirmadas</th>
+                    <th>Vagas livres</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Palestra: Inovações em Ensino</td>
+                    <td>48</td>
+                    <td>12</td>
+                    <td><span class="badge">Aberto</span></td>
+                </tr>
+                <tr>
+                    <td>Semana Acadêmica de Tecnologia</td>
+                    <td>25</td>
+                    <td>0</td>
+                    <td><span class="badge">Lotado</span></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="highlight-box">
+            Os dados de vagas refletem o método <code>vagas_disponiveis</code> do modelo <code>Evento</code>, impedindo confirmações acima da capacidade definida.
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -16,7 +16,34 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import TemplateView
 
 urlpatterns = [
+    path('', TemplateView.as_view(template_name='api/cadastro_usuario.html'), name='home'),
+    path(
+        'prototipos/cadastro-usuarios/',
+        TemplateView.as_view(template_name='api/cadastro_usuario.html'),
+        name='prototype-cadastro-usuario',
+    ),
+    path(
+        'prototipos/cadastro-eventos/',
+        TemplateView.as_view(template_name='api/cadastro_evento.html'),
+        name='prototype-cadastro-evento',
+    ),
+    path(
+        'prototipos/inscricao-usuarios/',
+        TemplateView.as_view(template_name='api/inscricao_usuario.html'),
+        name='prototype-inscricao-usuario',
+    ),
+    path(
+        'prototipos/emissao-certificados/',
+        TemplateView.as_view(template_name='api/emissao_certificado.html'),
+        name='prototype-emissao-certificado',
+    ),
+    path(
+        'prototipos/autenticacao/',
+        TemplateView.as_view(template_name='api/autenticacao.html'),
+        name='prototype-autenticacao',
+    ),
     path('admin/', admin.site.urls),
 ]

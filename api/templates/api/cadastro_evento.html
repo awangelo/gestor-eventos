@@ -1,0 +1,78 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Protótipo · Cadastro de Eventos{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Cadastro de eventos</h1>
+    <p>Organizadores registram novas atividades acadêmicas definindo período, local, capacidade e responsável. O protótipo reforça os campos obrigatórios do modelo <code>Evento</code>.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card">
+        <span class="badge">Formulário do evento</span>
+        <form>
+            <div class="form-group">
+                <label for="evento-tipo">Tipo</label>
+                <select id="evento-tipo">
+                    <option value="">Selecione</option>
+                    <option>Palestra</option>
+                    <option>Seminário</option>
+                    <option>Workshop</option>
+                    <option>Minicurso</option>
+                    <option>Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="evento-titulo">Título ou tema</label>
+                <input id="evento-titulo" type="text" placeholder="Pesquisa e Inovação na Universidade">
+            </div>
+            <div class="form-group">
+                <label for="evento-local">Local</label>
+                <input id="evento-local" type="text" placeholder="Auditório Central">
+            </div>
+            <div class="form-group">
+                <label for="evento-inicio">Data de início</label>
+                <input id="evento-inicio" type="date">
+            </div>
+            <div class="form-group">
+                <label for="evento-fim">Data de término</label>
+                <input id="evento-fim" type="date">
+            </div>
+            <div class="form-group">
+                <label for="evento-horario">Horário</label>
+                <input id="evento-horario" type="time">
+            </div>
+            <div class="form-group">
+                <label for="evento-capacidade">Capacidade</label>
+                <input id="evento-capacidade" type="number" min="1" step="1" placeholder="100">
+            </div>
+            <div class="form-group">
+                <label for="evento-organizador">Organizador responsável</label>
+                <select id="evento-organizador">
+                    <option value="">Selecione</option>
+                    <option>Ana Organiza</option>
+                    <option>Equipe Eventos</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn primary">Salvar evento</button>
+                <button type="button" class="btn secondary">Duplicar dados</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="prototype-card prototype-meta">
+        <h2>Checklist do organizador</h2>
+        <ol class="timeline">
+            <li>Verificar disponibilidade do local e datas.</li>
+            <li>Confirmar equipe de apoio e palestrantes.</li>
+            <li>Reservar vagas para convidados especiais.</li>
+            <li>Divulgar o evento para a comunidade acadêmica.</li>
+        </ol>
+        <div class="highlight-box">
+            <strong>Atenção:</strong> a data final deve ser igual ou posterior à data inicial e a capacidade precisa ser maior que zero.
+        </div>
+    </article>
+</section>
+{% endblock %}

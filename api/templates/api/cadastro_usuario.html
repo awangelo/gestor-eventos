@@ -1,0 +1,68 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Protótipo · Cadastro de Usuários{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Cadastro de usuários</h1>
+    <p>Fluxo utilizado por administradores e organizadores para registrar novos perfis no sistema. Os campos demonstram as validações essenciais exigidas pelos modelos.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card">
+        <span class="badge">Formulário principal</span>
+        <form>
+            <div class="form-group">
+                <label for="usuario-nome">Nome completo</label>
+                <input id="usuario-nome" type="text" placeholder="Ex.: Ana Paula Moreira">
+            </div>
+            <div class="form-group">
+                <label for="usuario-username">Usuário de login</label>
+                <input id="usuario-username" type="text" placeholder="ana.moreira">
+            </div>
+            <div class="form-group">
+                <label for="usuario-email">E-mail</label>
+                <input id="usuario-email" type="email" placeholder="ana@sgea.local">
+            </div>
+            <div class="form-group">
+                <label for="usuario-telefone">Telefone</label>
+                <input id="usuario-telefone" type="tel" placeholder="(61) 90000-0000">
+            </div>
+            <div class="form-group">
+                <label for="usuario-perfil">Perfil</label>
+                <select id="usuario-perfil">
+                    <option value="">Selecione</option>
+                    <option>Aluno</option>
+                    <option>Professor</option>
+                    <option>Organizador</option>
+                    <option>Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="usuario-instituicao">Instituição (obrigatória para alunos e professores)</label>
+                <input id="usuario-instituicao" type="text" placeholder="Universidade de Brasília">
+            </div>
+            <div class="form-group">
+                <label for="usuario-senha">Senha temporária</label>
+                <input id="usuario-senha" type="password" value="">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn primary">Salvar usuário</button>
+                <button type="reset" class="btn secondary">Limpar campos</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="prototype-card prototype-meta">
+        <h2>Regras principais</h2>
+        <ul class="status-list">
+            <li><span class="status-dot"></span>Perfis aluno e professor exigem instituição preenchida.</li>
+            <li><span class="status-dot"></span>Perfis organizador e admin podem ser criados apenas por administradores.</li>
+            <li><span class="status-dot"></span>Usuário de login precisa ser único.</li>
+        </ul>
+        <div class="highlight-box">
+            <strong>Dica:</strong> após salvar, o usuário recebe instruções por e-mail para definir a senha definitiva.
+        </div>
+    </article>
+</section>
+{% endblock %}

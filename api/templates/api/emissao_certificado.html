@@ -1,0 +1,59 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Protótipo · Emissão de Certificados{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Emissão de certificados</h1>
+    <p>Organizadores ou administradores selecionam uma inscrição confirmada com presença validada para gerar o certificado correspondente.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card">
+        <span class="badge">Emitir certificado</span>
+        <form>
+            <div class="form-group">
+                <label for="cert-inscricao">Inscrição elegível</label>
+                <select id="cert-inscricao">
+                    <option value="">Selecionar inscrição</option>
+                    <option>Bruno Aluno · Palestra Inovações · Presença confirmada</option>
+                    <option>Carla Professora · Semana Acadêmica · Presença confirmada</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cert-carga">Carga horária (h)</label>
+                <input id="cert-carga" type="number" min="1" value="4">
+            </div>
+            <div class="form-group">
+                <label for="cert-validade">Validade</label>
+                <input id="cert-validade" type="date">
+            </div>
+            <div class="form-group">
+                <label for="cert-observacoes">Observações</label>
+                <textarea id="cert-observacoes" placeholder="Notas adicionais sobre a participação."></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn primary">Emitir certificado</button>
+                <button type="button" class="btn secondary">Reenviar por e-mail</button>
+            </div>
+        </form>
+    </article>
+
+    <article class="prototype-card">
+        <span class="badge">Visualização</span>
+        <div class="highlight-box">
+            <p><strong>Código gerado:</strong> SGEA-AB12-XY98</p>
+            <p><strong>Participante:</strong> Bruno Aluno</p>
+            <p><strong>Evento:</strong> Palestra Inovações em Ensino (10/11/2025)</p>
+            <p><strong>Carga horária:</strong> 4 horas</p>
+            <p class="muted">A emissão só é liberada quando o status da inscrição é "Confirmada" e a presença está marcada.</p>
+        </div>
+        <ul class="timeline">
+            <li>Validar presença registrada.</li>
+            <li>Selecionar inscrição e revisar informações.</li>
+            <li>Gerar certificado com código único.</li>
+            <li>Disponibilizar para download ou envio por e-mail.</li>
+        </ul>
+    </article>
+</section>
+{% endblock %}

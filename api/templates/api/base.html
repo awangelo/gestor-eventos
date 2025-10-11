@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SGEA{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'api/styles.css' %}">
+</head>
+<body>
+    <header class="topbar">
+        <div class="container">
+            <a class="brand" href="{% url 'home' %}">SGEA</a>
+            <nav class="topbar-nav">
+                <a href="{% url 'prototype-cadastro-usuario' %}">Cadastro de usuários</a>
+                <a href="{% url 'prototype-cadastro-evento' %}">Cadastro de eventos</a>
+                <a href="{% url 'prototype-inscricao-usuario' %}">Inscrições</a>
+                <a href="{% url 'prototype-emissao-certificado' %}">Certificados</a>
+                <a href="{% url 'prototype-autenticacao' %}">Autenticação</a>
+            </nav>
+        </div>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+        <div class="container">
+            <p>Protótipo estático do Sistema de Gestão de Eventos Acadêmicos.</p>
+            <p>Email: contato@sgea.local</p>
+        </div>
+    </footer>
+</body>
+</html>
