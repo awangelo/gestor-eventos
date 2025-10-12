@@ -70,6 +70,9 @@ Os templates usam `TemplateView` configurado em `gestor_eventos/urls.py` para fa
 
 O script `database/schema.sql` recria o banco SQLite (mesmo schema utilizado pelo Django) com constraints e dados iniciais (usuários, eventos, inscrições e certificado de exemplo). Execute-o via CLI: `sqlite3 db.sqlite3 < database/schema.sql`.
 
+## Diagrama MER
+![Diagrama](diagrama-MER-inicial.png)
+
 ## Próximos Passos
 
 - Expor endpoints REST com Django REST Framework.
