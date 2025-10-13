@@ -2,6 +2,8 @@
 
 Projeto Django para cadastro de usuários, gerenciamento de eventos acadêmicos, inscrições e emissão de certificados.
 
+##### [Documentação Formal](docs/docs-prog-web.pdf)
+
 ## Alunos
 - Ângelo: 22409042
 - Augusto: 22400555
@@ -86,8 +88,3 @@ O script `database/schema.sql` recria o banco SQLite (mesmo schema utilizado pel
 
 ## Representação Visual dos Casos de Uso
 ![Casos de Uso](docs/casos-uso.png)
-
-## Próximos Passos
-
-- Expor endpoints REST com Django REST Framework.
-- Conectar formulários reais de cadastro/inscrição ao backend.
