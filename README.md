@@ -41,7 +41,7 @@ Projeto Django para cadastro de usuários, gerenciamento de eventos acadêmicos,
 	python manage.py test
 	```
 
-5. Carregue os dados de exemplo:
+5. Carregue os dados de exemplo, população inicial dos dados:
 
 	```bash
 	python database/load_sample_data.py
