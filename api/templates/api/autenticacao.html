@@ -5,27 +5,40 @@
 {% block content %}
 <section class="prototype-hero">
     <h1>Tela de autenticação</h1>
-    <p>Interface unificada para login e recuperação de acesso ao SGEA. O layout destaca o uso de credenciais personalizadas por perfil.</p>
+    <p>Interface unificada para login e recuperação de acesso ao SGEA.</p>
 </section>
 
 <div class="prototype-card auth-card">
     <span class="badge">Acesso ao sistema</span>
-    <form>
+    <form method="post">
+        {% csrf_token %}
+        {% if form_errors %}
+            <div class="alert alert-error">
+                <ul>
+                    {% for error in form_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if form_success %}
+            <div class="alert alert-success">{{ form_success }}</div>
+        {% endif %}
         <div class="form-group">
             <label for="login-username">Usuário ou e-mail</label>
-            <input id="login-username" type="text" placeholder="seu.usuario">
+            <input id="login-username" name="username" type="text" placeholder="seu.usuario" value="{{ form_data.username|default:'' }}">
         </div>
         <div class="form-group">
             <label for="login-password">Senha</label>
-            <input id="login-password" type="password" placeholder="••••••••">
+            <input id="login-password" name="password" type="password" placeholder="••••••••">
         </div>
         <div class="form-group">
             <label>
-                <input type="checkbox"> Permanecer conectado
+                <input type="checkbox" name="remember_me" {% if form_data.remember_me %}checked{% endif %}> Permanecer conectado
             </label>
         </div>
         <div class="form-actions">
-            <button type="button" class="btn primary">Entrar</button>
+            <button type="submit" class="btn primary">Entrar</button>
             <a class="btn secondary" href="#">Acessar como convidado</a>
         </div>
         <p class="muted" style="margin-top: 1rem;">

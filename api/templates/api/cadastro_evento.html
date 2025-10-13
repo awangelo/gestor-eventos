@@ -5,74 +5,82 @@
 {% block content %}
 <section class="prototype-hero">
     <h1>Cadastro de eventos</h1>
-    <p>Organizadores registram novas atividades acadêmicas definindo período, local, capacidade e responsável. O protótipo reforça os campos obrigatórios do modelo <code>Evento</code>.</p>
+    <p>Organizadores registram novas atividades acadêmicas definindo período, local, capacidade e responsável.</p>
 </section>
 
 <section class="prototype-grid">
     <article class="prototype-card">
         <span class="badge">Formulário do evento</span>
-        <form>
+        <form method="post">
+            {% csrf_token %}
+            {% if form_errors %}
+                <div class="alert alert-error">
+                    <ul>
+                        {% for error in form_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% if form_success %}
+                <div class="alert alert-success">{{ form_success }}</div>
+            {% endif %}
             <div class="form-group">
                 <label for="evento-tipo">Tipo</label>
-                <select id="evento-tipo">
+                <select id="evento-tipo" name="tipo">
                     <option value="">Selecione</option>
-                    <option>Palestra</option>
-                    <option>Seminário</option>
-                    <option>Workshop</option>
-                    <option>Minicurso</option>
-                    <option>Outro</option>
+                    {% for value, label in tipos_evento %}
+                        <option value="{{ value }}" {% if form_data.tipo == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-group">
                 <label for="evento-titulo">Título ou tema</label>
-                <input id="evento-titulo" type="text" placeholder="Pesquisa e Inovação na Universidade">
+                <input id="evento-titulo" name="titulo" type="text" placeholder="Pesquisa e Inovação na Universidade" value="{{ form_data.titulo|default:'' }}">
             </div>
             <div class="form-group">
                 <label for="evento-local">Local</label>
-                <input id="evento-local" type="text" placeholder="Auditório Central">
+                <input id="evento-local" name="local" type="text" placeholder="Auditório Central" value="{{ form_data.local|default:'' }}">
             </div>
             <div class="form-group">
                 <label for="evento-inicio">Data de início</label>
-                <input id="evento-inicio" type="date">
+                <input id="evento-inicio" name="data_inicio" type="date" value="{{ form_data.data_inicio|default:'' }}">
             </div>
             <div class="form-group">
                 <label for="evento-fim">Data de término</label>
-                <input id="evento-fim" type="date">
+                <input id="evento-fim" name="data_fim" type="date" value="{{ form_data.data_fim|default:'' }}">
             </div>
             <div class="form-group">
                 <label for="evento-horario">Horário</label>
-                <input id="evento-horario" type="time">
+                <input id="evento-horario" name="horario" type="time" value="{{ form_data.horario|default:'' }}">
             </div>
             <div class="form-group">
                 <label for="evento-capacidade">Capacidade</label>
-                <input id="evento-capacidade" type="number" min="1" step="1" placeholder="100">
+                <input id="evento-capacidade" name="capacidade" type="number" min="1" step="1" placeholder="100" value="{{ form_data.capacidade|default:'' }}">
             </div>
             <div class="form-group">
                 <label for="evento-organizador">Organizador responsável</label>
-                <select id="evento-organizador">
+                <select id="evento-organizador" name="organizador">
                     <option value="">Selecione</option>
-                    <option>Ana Organiza</option>
-                    <option>Equipe Eventos</option>
+                    {% for organizador in organizadores %}
+                        <option value="{{ organizador.pk }}" {% if form_data.organizador == organizador.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ organizador.nome|default:organizador.get_full_name|default:organizador.username }}
+                            {% if organizador.instituicao %}
+                                · {{ organizador.get_perfil_display }} - {{ organizador.get_instituicao_display|default:organizador.instituicao }}
+                            {% else %}
+                                · {{ organizador.get_perfil_display }}
+                            {% endif %}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhum organizador elegível encontrado</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn primary">Salvar evento</button>
+                <button type="submit" class="btn primary">Salvar evento</button>
                 <button type="button" class="btn secondary">Duplicar dados</button>
             </div>
         </form>
-    </article>
-
-    <article class="prototype-card prototype-meta">
-        <h2>Checklist do organizador</h2>
-        <ol class="timeline">
-            <li>Verificar disponibilidade do local e datas.</li>
-            <li>Confirmar equipe de apoio e palestrantes.</li>
-            <li>Reservar vagas para convidados especiais.</li>
-            <li>Divulgar o evento para a comunidade acadêmica.</li>
-        </ol>
-        <div class="highlight-box">
-            <strong>Atenção:</strong> a data final deve ser igual ou posterior à data inicial e a capacidade precisa ser maior que zero.
-        </div>
     </article>
 </section>
 {% endblock %}

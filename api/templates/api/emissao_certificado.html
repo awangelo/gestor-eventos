@@ -11,49 +11,63 @@
 <section class="prototype-grid">
     <article class="prototype-card">
         <span class="badge">Emitir certificado</span>
-        <form>
+        <form method="post">
+            {% csrf_token %}
+            {% if form_errors %}
+                <div class="alert alert-error">
+                    <ul>
+                        {% for error in form_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% if form_success %}
+                <div class="alert alert-success">{{ form_success }}</div>
+            {% endif %}
             <div class="form-group">
                 <label for="cert-inscricao">Inscrição elegível</label>
-                <select id="cert-inscricao">
+                <select id="cert-inscricao" name="inscricao">
                     <option value="">Selecionar inscrição</option>
-                    <option>Bruno Aluno · Palestra Inovações · Presença confirmada</option>
-                    <option>Carla Professora · Semana Acadêmica · Presença confirmada</option>
+                    {% for inscricao in inscricoes_elegiveis %}
+                        <option value="{{ inscricao.pk }}" {% if form_data.inscricao == inscricao.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ inscricao.participante.nome }} · {{ inscricao.evento.get_tipo_display }} · {{ inscricao.evento.data_inicio|date:"d/m/Y" }}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhuma inscrição com presença confirmada encontrada</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-group">
                 <label for="cert-carga">Carga horária (h)</label>
-                <input id="cert-carga" type="number" min="1" value="4">
+                <input id="cert-carga" name="carga_horaria" type="number" min="1" value="{{ form_data.carga_horaria|default:4 }}">
+            </div>
+            <div class="form-group">
+                <label for="cert-emitido-por">Emitido por</label>
+                <select id="cert-emitido-por" name="emitido_por">
+                    <option value="">Selecionar emissor</option>
+                    {% for emissor in emissores %}
+                        <option value="{{ emissor.pk }}" {% if form_data.emitido_por == emissor.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ emissor.nome }} · {{ emissor.get_perfil_display }}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhum emissor autorizado disponível</option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="form-group">
                 <label for="cert-validade">Validade</label>
-                <input id="cert-validade" type="date">
+                <input id="cert-validade" name="validade" type="date" value="{{ form_data.validade|default:'' }}">
             </div>
             <div class="form-group">
                 <label for="cert-observacoes">Observações</label>
-                <textarea id="cert-observacoes" placeholder="Notas adicionais sobre a participação."></textarea>
+                <textarea id="cert-observacoes" name="observacoes" placeholder="Notas adicionais sobre a participação.">{{ form_data.observacoes|default:'' }}</textarea>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn primary">Emitir certificado</button>
+                <button type="submit" class="btn primary">Emitir certificado</button>
                 <button type="button" class="btn secondary">Reenviar por e-mail</button>
             </div>
         </form>
-    </article>
-
-    <article class="prototype-card">
-        <span class="badge">Visualização</span>
-        <div class="highlight-box">
-            <p><strong>Código gerado:</strong> SGEA-AB12-XY98</p>
-            <p><strong>Participante:</strong> Bruno Aluno</p>
-            <p><strong>Evento:</strong> Palestra Inovações em Ensino (10/11/2025)</p>
-            <p><strong>Carga horária:</strong> 4 horas</p>
-            <p class="muted">A emissão só é liberada quando o status da inscrição é "Confirmada" e a presença está marcada.</p>
-        </div>
-        <ul class="timeline">
-            <li>Validar presença registrada.</li>
-            <li>Selecionar inscrição e revisar informações.</li>
-            <li>Gerar certificado com código único.</li>
-            <li>Disponibilizar para download ou envio por e-mail.</li>
-        </ul>
     </article>
 </section>
 {% endblock %}
