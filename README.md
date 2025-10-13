@@ -2,6 +2,11 @@
 
 Projeto Django para cadastro de usuários, gerenciamento de eventos acadêmicos, inscrições e emissão de certificados.
 
+## Alunos
+- Ângelo: 22409042
+- Augusto: 22400555
+- Luana: 22404503
+
 ## Requisitos
 
 - Python 3.13 (ou superior compatível)
