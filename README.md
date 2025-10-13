@@ -41,7 +41,13 @@ Projeto Django para cadastro de usuários, gerenciamento de eventos acadêmicos,
 	python manage.py test
 	```
 
-5. Suba o servidor de desenvolvimento e acesse o protótipo HTML/CSS:
+5. Carregue os dados de exemplo:
+
+	```bash
+	python database/load_sample_data.py
+	```
+
+6. Suba o servidor de desenvolvimento e acesse o protótipo HTML/CSS:
 
 	```bash
 	python manage.py runserver
