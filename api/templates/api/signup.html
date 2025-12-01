@@ -1,0 +1,119 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Criar Conta - SGEA{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Criar sua conta</h1>
+    <p>Cadastre-se para ter acesso ao Sistema de Gestão de Eventos Acadêmicos.</p>
+</section>
+
+<div class="prototype-card auth-card" style="max-width: 520px;">
+    <span class="badge">Nova Conta</span>
+    <form method="post">
+        {% csrf_token %}
+        {% if form_errors %}
+            <div class="alert alert-error">
+                <ul>
+                    {% for error in form_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if form_success %}
+            <div class="alert alert-success">{{ form_success }}</div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="signup-nome">Nome completo</label>
+            <input id="signup-nome" name="nome" type="text" placeholder="Ex.: Ana Paula Moreira" value="{{ form_data.nome|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="signup-username">Usuário de login</label>
+            <input id="signup-username" name="username" type="text" placeholder="ana.moreira" value="{{ form_data.username|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="signup-email">E-mail</label>
+            <input id="signup-email" name="email" type="email" placeholder="ana@exemplo.com" value="{{ form_data.email|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="signup-telefone">Telefone</label>
+            <input id="signup-telefone" name="telefone" type="tel" placeholder="(61) 90000-0000" value="{{ form_data.telefone|default:'' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="signup-perfil">Perfil</label>
+            <select id="signup-perfil" name="perfil" required>
+                <option value="">Selecione seu perfil</option>
+                {% for value, label in perfis %}
+                    <option value="{{ value }}" {% if form_data.perfil == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group" id="instituicao-group">
+            <label for="signup-instituicao">Instituição <span id="instituicao-required" style="color: var(--primary);">(obrigatória para Aluno e Professor)</span></label>
+            <select id="signup-instituicao" name="instituicao">
+                <option value="">Selecione sua instituição</option>
+                {% for value, label in instituicoes %}
+                    <option value="{{ value }}" {% if form_data.instituicao == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="signup-senha">Senha</label>
+            <input id="signup-senha" name="senha" type="password" required>
+            <small style="display: block; margin-top: 0.25rem; color: var(--muted); font-size: 0.85rem;">
+                Mínimo 8 caracteres, contendo letras, números e caracteres especiais
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label for="signup-confirmar-senha">Confirmar Senha</label>
+            <input id="signup-confirmar-senha" name="confirmar_senha" type="password" required>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn primary" style="width: 100%;">Criar Conta</button>
+        </div>
+        
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid rgba(15, 23, 42, 0.1);">
+        
+        <p class="muted" style="text-align: center; font-size: 0.9rem;">
+            Já tem uma conta? <a class="link-inline" href="{% url 'login' %}">Fazer login</a>
+        </p>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function(){
+        $('#signup-telefone').mask('(00) 00000-0000');
+        
+        // Show/hide instituicao requirement based on perfil
+        $('#signup-perfil').on('change', function() {
+            const perfil = $(this).val();
+            const instituicaoGroup = $('#instituicao-group');
+            const instituicaoSelect = $('#signup-instituicao');
+            const instituicaoRequired = $('#instituicao-required');
+            
+            if (perfil === 'ALUNO' || perfil === 'PROFESSOR') {
+                instituicaoRequired.show();
+                instituicaoSelect.prop('required', true);
+            } else {
+                instituicaoRequired.hide();
+                instituicaoSelect.prop('required', false);
+            }
+        });
+        
+        // Trigger on page load if perfil is already selected
+        $('#signup-perfil').trigger('change');
+    });
+</script>
+{% endblock %}

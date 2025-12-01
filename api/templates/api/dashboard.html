@@ -1,0 +1,106 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Dashboard - SGEA{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Bem-vindo, {{ request.user.nome|default:request.user.username }}</h1>
+    <p>Perfil: <strong>{{ request.user.get_perfil_display }}</strong></p>
+</section>
+
+<section class="prototype-grid">
+    {% if request.user.perfil == 'ADMIN' %}
+        <!-- ADMIN: Access to all features -->
+        <article class="prototype-card">
+            <span class="badge">Administração</span>
+            <h3 style="margin: 0.75rem 0; font-size: 1.35rem;">Gerenciamento Completo</h3>
+            <p style="color: var(--muted); margin-bottom: 1.5rem; flex: 1;">Como administrador, você tem acesso a todas as funcionalidades do sistema.</p>
+            <div class="form-actions" style="flex-direction: column;">
+                <a href="{% url 'cadastro-usuario' %}" class="btn primary" style="width: 100%; text-align: center;">Cadastro de Usuários</a>
+                <a href="{% url 'cadastro-evento' %}" class="btn primary" style="width: 100%; text-align: center;">Cadastro de Eventos</a>
+                <a href="{% url 'inscricao-usuario' %}" class="btn primary" style="width: 100%; text-align: center;">Gerenciar Inscrições</a>
+                <a href="{% url 'presenca' %}" class="btn primary" style="width: 100%; text-align: center;">Confirmar Presença</a>
+                <a href="{% url 'emissao-certificado' %}" class="btn primary" style="width: 100%; text-align: center;">Emitir Certificados</a>
+            </div>
+        </article>
+    {% endif %}
+
+    {% if request.user.perfil == 'ORGANIZADOR' %}
+        <!-- ORGANIZADOR: Event management and certificates -->
+        <article class="prototype-card">
+            <span class="badge">Organizador</span>
+            <h3 style="margin: 0.75rem 0 0.5rem; font-size: 1.35rem;">Cadastrar Eventos</h3>
+            <p style="color: var(--muted); margin-bottom: 1.5rem; flex: 1;">Crie novos eventos acadêmicos.</p>
+            <div class="form-actions">
+                <a href="{% url 'cadastro-evento' %}" class="btn primary" style="width: 100%; text-align: center;">Cadastrar Evento</a>
+            </div>
+        </article>
+        
+        <article class="prototype-card">
+            <span class="badge">Inscrições</span>
+            <h3 style="margin: 0.75rem 0 0.5rem; font-size: 1.35rem;">Gerenciar Inscrições</h3>
+            <p style="color: var(--muted); margin-bottom: 1.5rem; flex: 1;">Visualize e gerencie inscrições dos seus eventos.</p>
+            <div class="form-actions">
+                <a href="{% url 'inscricao-usuario' %}" class="btn primary" style="width: 100%; text-align: center;">Ver Inscrições</a>
+            </div>
+        </article>
+        
+        <article class="prototype-card">
+            <span class="badge">Presença</span>
+            <h3 style="margin: 0.75rem 0 0.5rem; font-size: 1.35rem;">Confirmar Presença</h3>
+            <p style="color: var(--muted); margin-bottom: 1.5rem; flex: 1;">Marque a presença dos participantes nos seus eventos.</p>
+            <div class="form-actions">
+                <a href="{% url 'presenca' %}" class="btn primary" style="width: 100%; text-align: center;">Gerenciar Presença</a>
+            </div>
+        </article>
+        
+        <article class="prototype-card">
+            <span class="badge">Certificados</span>
+            <h3 style="margin: 0.75rem 0 0.5rem; font-size: 1.35rem;">Emitir Certificados</h3>
+            <p style="color: var(--muted); margin-bottom: 1.5rem; flex: 1;">Emita certificados para participantes dos seus eventos.</p>
+            <div class="form-actions">
+                <a href="{% url 'emissao-certificado' %}" class="btn primary" style="width: 100%; text-align: center;">Emitir Certificado</a>
+            </div>
+        </article>
+    {% endif %}
+
+    {% if request.user.perfil == 'ALUNO' or request.user.perfil == 'PROFESSOR' %}
+        <!-- ALUNO/PROFESSOR: Registration and certificates -->
+        <article class="prototype-card">
+            <span class="badge">Eventos</span>
+            <h3 style="margin: 0.75rem 0 0.5rem; font-size: 1.35rem;">Inscrição em Eventos</h3>
+            <p style="color: var(--muted); margin-bottom: 1.5rem; flex: 1;">Inscreva-se em eventos acadêmicos disponíveis.</p>
+            <div class="form-actions">
+                <a href="{% url 'inscricao-usuario' %}" class="btn primary" style="width: 100%; text-align: center;">Fazer Inscrição</a>
+            </div>
+        </article>
+        
+        <article class="prototype-card">
+            <span class="badge">Certificados</span>
+            <h3 style="margin: 0.75rem 0 0.5rem; font-size: 1.35rem;">Meus Certificados</h3>
+            <p style="color: var(--muted); margin-bottom: 1.5rem; flex: 1;">Solicite e visualize seus certificados.</p>
+            <div class="form-actions">
+                <a href="{% url 'emissao-certificado' %}" class="btn primary" style="width: 100%; text-align: center;">Solicitar Certificado</a>
+            </div>
+        </article>
+    {% endif %}
+</section>
+
+<section class="prototype-grid" style="margin-top: 2rem;">
+    <article class="prototype-card">
+        <span class="badge">Conta</span>
+        <h3 style="margin: 0.75rem 0 0.5rem; font-size: 1.35rem;">Informações da Conta</h3>
+        <ul style="color: var(--muted); line-height: 1.9; margin: 1rem 0 1.5rem; flex: 1;">
+            <li><strong>Nome:</strong> {{ request.user.nome }}</li>
+            <li><strong>E-mail:</strong> {{ request.user.email }}</li>
+            <li><strong>Telefone:</strong> {{ request.user.telefone }}</li>
+            {% if request.user.instituicao %}
+                <li><strong>Instituição:</strong> {{ request.user.get_instituicao_display }}</li>
+            {% endif %}
+        </ul>
+        <div class="form-actions">
+            <a href="{% url 'logout' %}" class="btn secondary" style="width: 100%; text-align: center;">Sair</a>
+        </div>
+    </article>
+</section>
+{% endblock %}

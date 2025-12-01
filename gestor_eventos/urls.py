@@ -16,17 +16,41 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
+from rest_framework.authtoken.views import obtain_auth_token
 
 from api.views import (
     AutenticacaoView,
     CadastroEventoView,
     CadastroUsuarioView,
+    DashboardView,
+    DetalhesEventoView,
     EmissaoCertificadoView,
     InscricaoUsuarioView,
+    PresencaView,
+    SignupView,
+    logout_view,
 )
+from api.endpoints import EventoListView, InscricaoCreateView
 
 urlpatterns = [
-    path('', CadastroUsuarioView.as_view(), name='home'),
+    path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
+    path('api/eventos/', EventoListView.as_view(), name='api-evento-list'),
+    path('api/inscricao/', InscricaoCreateView.as_view(), name='api-inscricao-create'),
+    
+    path('', AutenticacaoView.as_view(), name='home'),
+    path('login/', AutenticacaoView.as_view(), name='login'),
+    path('signup/', SignupView.as_view(), name='signup'),
+    path('logout/', logout_view, name='logout'),
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
+    
+    path('cadastro-usuarios/', CadastroUsuarioView.as_view(), name='cadastro-usuario'),
+    path('cadastro-eventos/', CadastroEventoView.as_view(), name='cadastro-evento'),
+    path('inscricao/', InscricaoUsuarioView.as_view(), name='inscricao-usuario'),
+    path('presenca/', PresencaView.as_view(), name='presenca'),
+    path('certificados/', EmissaoCertificadoView.as_view(), name='emissao-certificado'),
+    path('eventos/<int:evento_id>/', DetalhesEventoView.as_view(), name='detalhes-evento'),
     path(
         'prototipos/cadastro-usuarios/',
         CadastroUsuarioView.as_view(),
@@ -54,3 +78,7 @@ urlpatterns = [
     ),
     path('admin/', admin.site.urls),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import json
+import os
+import re
 from datetime import date
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.shortcuts import redirect, get_object_or_404
+from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
+
+from .decorators import perfil_required, admin_required, organizador_or_admin_required, aluno_professor_required
 
 from .models import (
 	Certificado,
@@ -17,6 +26,69 @@ from .models import (
 	TipoEventoChoices,
 	Usuario,
 )
+
+
+def _validate_image_file(file) -> str | None:
+	"""
+	Validate that the uploaded file is an image.
+	Returns error message if invalid, None if valid.
+	"""
+	if not file:
+		return None
+	
+	# Check file extension
+	allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']
+	file_ext = os.path.splitext(file.name)[1].lower()
+	
+	if file_ext not in allowed_extensions:
+		return f"Formato de arquivo inválido. Use: {', '.join(allowed_extensions)}"
+	
+	# Check MIME type
+	allowed_mime_types = [
+		'image/jpeg',
+		'image/png',
+		'image/gif',
+		'image/bmp',
+		'image/webp',
+		'image/svg+xml'
+	]
+	
+	if hasattr(file, 'content_type') and file.content_type not in allowed_mime_types:
+		return "O arquivo enviado não é uma imagem válida."
+	
+	# Check file size (max 5MB)
+	max_size = 5 * 1024 * 1024  # 5MB in bytes
+	if file.size > max_size:
+		return "A imagem deve ter no máximo 5MB."
+	
+	return None
+
+
+def _validate_password(password: str) -> str | None:
+	"""
+	Validate password meets security criteria:
+	- At least 8 characters
+	- Contains letters
+	- Contains numbers
+	- Contains special characters
+	Returns error message if invalid, None if valid.
+	"""
+	if not password:
+		return "A senha é obrigatória."
+	
+	if len(password) < 8:
+		return "A senha deve ter no mínimo 8 caracteres."
+	
+	if not re.search(r'[a-zA-Z]', password):
+		return "A senha deve conter pelo menos uma letra."
+	
+	if not re.search(r'\d', password):
+		return "A senha deve conter pelo menos um número."
+	
+	if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\;/~`]', password):
+		return "A senha deve conter pelo menos um caractere especial."
+	
+	return None
 
 
 def _flatten_validation_errors(error: ValidationError) -> list[str]:
@@ -51,6 +123,7 @@ class PostFeedbackMixin:
 		return context
 
 
+@method_decorator(admin_required, name='dispatch')
 class CadastroUsuarioView(PostFeedbackMixin, TemplateView):
 	template_name = "api/cadastro_usuario.html"
 
@@ -74,7 +147,8 @@ class CadastroUsuarioView(PostFeedbackMixin, TemplateView):
 		telefone = data.get("telefone", "").strip()
 		perfil = data.get("perfil", "").strip()
 		instituicao_raw = data.get("instituicao", "").strip()
-		senha = data.get("senha", "").strip() or None
+		senha = data.get("senha", "").strip()
+		confirmar_senha = data.get("confirmar_senha", "").strip()
 
 		if not nome:
 			errors.append("Informe o nome completo.")
@@ -88,6 +162,13 @@ class CadastroUsuarioView(PostFeedbackMixin, TemplateView):
 			errors.append("Selecione um perfil válido.")
 		elif perfil not in dict(PerfilChoices.choices):
 			errors.append("Perfil informado é inválido.")
+
+		# Validate password
+		password_error = _validate_password(senha)
+		if password_error:
+			errors.append(password_error)
+		elif senha != confirmar_senha:
+			errors.append("As senhas não coincidem.")
 
 		instituicao = instituicao_raw or None
 		if perfil in {PerfilChoices.ALUNO, PerfilChoices.PROFESSOR} and not instituicao:
@@ -118,6 +199,7 @@ class CadastroUsuarioView(PostFeedbackMixin, TemplateView):
 		return self.render_post_response(success=success, clear_data=True)
 
 
+@method_decorator(organizador_or_admin_required, name='dispatch')
 class CadastroEventoView(PostFeedbackMixin, TemplateView):
 	template_name = "api/cadastro_evento.html"
 
@@ -131,19 +213,28 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 			])
 			.order_by("nome", "username")
 		)
+		context["professores"] = (
+			Usuario.objects.filter(perfil=PerfilChoices.PROFESSOR)
+			.order_by("nome", "username")
+		)
 		return context
 
 
 	def post(self, request, *args, **kwargs):
 		data = request.POST
+		files = request.FILES
 		errors: list[str] = []
 
 		tipo = data.get("tipo", "").strip()
+		titulo = data.get("titulo", "").strip()
 		local = data.get("local", "").strip()
 		data_inicio_raw = data.get("data_inicio")
 		data_fim_raw = data.get("data_fim")
+		horario_raw = data.get("horario")
 		capacidade_raw = data.get("capacidade")
 		organizador_id = data.get("organizador")
+		professor_id = data.get("professor_responsavel")
+		banner = files.get("banner")
 
 		if not tipo:
 			errors.append("Selecione o tipo de evento.")
@@ -151,6 +242,12 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 			errors.append("Tipo de evento inválido.")
 		if not local:
 			errors.append("Informe o local do evento.")
+
+		# Validate banner image if provided
+		if banner:
+			banner_error = _validate_image_file(banner)
+			if banner_error:
+				errors.append(banner_error)
 
 		try:
 			data_inicio = date.fromisoformat(data_inicio_raw) if data_inicio_raw else None
@@ -184,8 +281,22 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 			except Usuario.DoesNotExist:
 				errors.append("Organizador informado não é válido.")
 
+		professor = None
+		if not professor_id:
+			errors.append("Selecione um professor responsável.")
+		else:
+			try:
+				professor = Usuario.objects.get(
+					pk=professor_id,
+					perfil=PerfilChoices.PROFESSOR,
+				)
+			except Usuario.DoesNotExist:
+				errors.append("Professor informado não é válido.")
+
 		if not data_inicio:
 			errors.append("Informe a data de início.")
+		elif data_inicio < date.today():
+			errors.append("A data de início não pode ser anterior à data atual.")
 		if not data_fim:
 			errors.append("Informe a data de término.")
 		if capacidade is None:
@@ -197,16 +308,23 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 		try:
 			evento = Evento.objects.create(
 				tipo=tipo,
+				titulo=titulo,
 				data_inicio=data_inicio,
 				data_fim=data_fim,
+				horario=horario_raw or None,
 				local=local,
 				capacidade=capacidade,
 				organizador=organizador,
+				professor_responsavel=professor,
+				banner=banner,
 			)
 		except ValidationError as exc:
 			errors.extend(_flatten_validation_errors(exc))
 		except IntegrityError:
 			errors.append("Não foi possível cadastrar o evento. Tente novamente.")
+		except Exception as e:
+			# Catch potential image validation errors from Pillow if not caught by ValidationError
+			errors.append(f"Erro ao salvar evento: {str(e)}")
 
 		if errors:
 			return self.render_post_response(errors=errors)
@@ -215,23 +333,66 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 		return self.render_post_response(success=success, clear_data=True)
 
 
+@method_decorator(login_required(login_url='login'), name='dispatch')
 class InscricaoUsuarioView(PostFeedbackMixin, TemplateView):
 	template_name = "api/inscricao_usuario.html"
 
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
-		context["eventos"] = (
-			Evento.objects.select_related("organizador")
-			.order_by("data_inicio", "tipo")
-		)
-		context["participantes"] = (
-			Usuario.objects.filter(perfil__in=[
-				PerfilChoices.ALUNO,
-				PerfilChoices.PROFESSOR,
-			])
-			.order_by("nome", "username")
-		)
-		context["status_inscricao"] = InscricaoStatus.choices
+		
+		# Filter events based on user role
+		if self.request.user.perfil == PerfilChoices.ORGANIZADOR:
+			# ORGANIZADOR only sees their own events
+			context["eventos"] = (
+				Evento.objects.filter(organizador=self.request.user)
+				.select_related("organizador")
+				.order_by("data_inicio", "tipo")
+			)
+		else:
+			# ADMIN, ALUNO, PROFESSOR see all events
+			context["eventos"] = (
+				Evento.objects.select_related("organizador")
+				.order_by("data_inicio", "tipo")
+			)
+		
+		# Only ADMIN and ORGANIZADOR can see participant dropdown
+		if self.request.user.perfil in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+			# Get all inscribed participants grouped by event with their status
+			inscricoes = Inscricao.objects.select_related('evento', 'participante').all()
+			
+			# Create mappings:
+			# 1. event_id -> list of participant_ids
+			# 2. "event_id_participant_id" -> status
+			evento_participantes = {}
+			inscricao_status_map = {}
+			
+			for inscricao in inscricoes:
+				evento_id = inscricao.evento_id
+				participante_id = inscricao.participante_id
+				
+				if evento_id not in evento_participantes:
+					evento_participantes[evento_id] = []
+				evento_participantes[evento_id].append(participante_id)
+				
+				# Store status with composite key
+				key = f"{evento_id}_{participante_id}"
+				inscricao_status_map[key] = inscricao.get_status_display()
+			
+			context["evento_participantes_json"] = json.dumps(evento_participantes)
+			context["inscricao_status_map_json"] = json.dumps(inscricao_status_map)
+			context["participantes"] = (
+				Usuario.objects.filter(perfil__in=[
+					PerfilChoices.ALUNO,
+					PerfilChoices.PROFESSOR,
+				])
+				.order_by("nome", "username")
+			)
+			context["status_inscricao"] = InscricaoStatus.choices
+		else:
+			# Students and professors only register themselves
+			context["participantes"] = None
+			context["status_inscricao"] = None
+		
 		return context
 
 
@@ -240,30 +401,71 @@ class InscricaoUsuarioView(PostFeedbackMixin, TemplateView):
 		errors: list[str] = []
 
 		evento_id = data.get("evento")
-		participante_id = data.get("participante")
-		status = data.get("status", InscricaoStatus.PENDENTE)
-		presenca_confirmada = data.get("presenca_confirmada") == "on"
+		
+		# Determine participant based on role
+		if request.user.perfil in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+			# Students/Professors can only register themselves
+			participante_id = request.user.pk
+			status = InscricaoStatus.PENDENTE
+			presenca_confirmada = False
+		else:
+			# ADMIN/ORGANIZADOR can register others
+			participante_id = data.get("participante")
+			status = data.get("status", InscricaoStatus.PENDENTE)
+			presenca_confirmada = False
+			
+			if not participante_id:
+				errors.append("Selecione um participante.")
+			if status not in dict(InscricaoStatus.choices):
+				errors.append("Status de inscrição inválido.")
 
 		if not evento_id:
 			errors.append("Escolha um evento.")
-		if not participante_id:
-			errors.append("Selecione um participante.")
-		if status not in dict(InscricaoStatus.choices):
-			errors.append("Status de inscrição inválido.")
 
 		if errors:
 			return self.render_post_response(errors=errors)
 
+		# Validate ORGANIZADOR can only manage their own events
+		if request.user.perfil == PerfilChoices.ORGANIZADOR:
+			try:
+				evento = Evento.objects.get(pk=evento_id, organizador=request.user)
+			except Evento.DoesNotExist:
+				return self.render_post_response(errors=["Você não tem permissão para gerenciar inscrições deste evento."])
+		else:
+			# ADMIN can manage any event, ALUNO/PROFESSOR already validated
+			try:
+				evento = Evento.objects.get(pk=evento_id)
+			except Evento.DoesNotExist:
+				return self.render_post_response(errors=["Evento não encontrado."])
+
+		# Check if user is already registered in this event
+		existing_inscricao = Inscricao.objects.filter(
+			evento_id=evento_id,
+			participante_id=participante_id
+		).first()
+		
+		if existing_inscricao:
+			# If already registered, only allow status update
+			if request.user.perfil in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+				# ADMIN/ORGANIZADOR can update status
+				existing_inscricao.status = status
+				existing_inscricao.save()
+				return self.render_post_response(success="Inscrição atualizada com sucesso.", clear_data=True)
+			else:
+				# ALUNO/PROFESSOR cannot register twice
+				return self.render_post_response(errors=["Você já está inscrito neste evento."])
+		
+		# Check if event has available slots (only for new confirmations)
+		if status == InscricaoStatus.CONFIRMADA:
+			if evento.vagas_disponiveis <= 0:
+				return self.render_post_response(errors=["O evento não possui vagas disponíveis."])
+
 		try:
-			inscricao, created = Inscricao.objects.get_or_create(
+			inscricao = Inscricao.objects.create(
 				evento_id=evento_id,
 				participante_id=participante_id,
-				defaults={"status": status, "presenca_confirmada": presenca_confirmada},
+				status=status,
 			)
-			if not created:
-				inscricao.status = status
-				inscricao.presenca_confirmada = presenca_confirmada
-				inscricao.save()
 		except ValidationError as exc:
 			errors.extend(_flatten_validation_errors(exc))
 		except IntegrityError:
@@ -272,35 +474,58 @@ class InscricaoUsuarioView(PostFeedbackMixin, TemplateView):
 		if errors:
 			return self.render_post_response(errors=errors)
 
-		action = " criada" if created else " atualizada"
-		success = f"Inscrição{action} com sucesso."
+		success = "Inscrição criada com sucesso."
 		return self.render_post_response(success=success, clear_data=True)
 
 
+@method_decorator(login_required(login_url='login'), name='dispatch')
 class EmissaoCertificadoView(PostFeedbackMixin, TemplateView):
 	template_name = "api/emissao_certificado.html"
 
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
-		context["inscricoes_elegiveis"] = (
-			Inscricao.objects.filter(
+		
+		if self.request.user.perfil in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+			# Organizers and admins can issue certificates
+			# ORGANIZADOR only sees inscricoes from their events
+			inscricoes_query = Inscricao.objects.filter(
 				status=InscricaoStatus.CONFIRMADA,
 				presenca_confirmada=True,
 			)
-			.select_related("evento", "participante")
-			.order_by("-data_inscricao")
-		)
-		context["emissores"] = (
-			Usuario.objects.filter(perfil__in=[
-				PerfilChoices.ADMIN,
-				PerfilChoices.ORGANIZADOR,
-			])
-			.order_by("nome", "username")
-		)
+			if self.request.user.perfil == PerfilChoices.ORGANIZADOR:
+				inscricoes_query = inscricoes_query.filter(evento__organizador=self.request.user)
+			
+			context["inscricoes_elegiveis"] = (
+				inscricoes_query
+				.select_related("evento", "participante")
+				.order_by("-data_inscricao")
+			)
+			context["emissores"] = (
+				Usuario.objects.filter(perfil__in=[
+					PerfilChoices.ADMIN,
+					PerfilChoices.ORGANIZADOR,
+				])
+				.order_by("nome", "username")
+			)
+			context["user_role"] = "issuer"
+		else:
+			# Students and professors can view their own certificates
+			context["meus_certificados"] = (
+				Certificado.objects.filter(inscricao__participante=self.request.user)
+				.select_related("inscricao__evento", "emitido_por")
+				.order_by("-emitido_em")
+			)
+			context["user_role"] = "recipient"
+		
 		return context
 
 
 	def post(self, request, *args, **kwargs):
+		# Only ADMIN and ORGANIZADOR can issue certificates
+		if request.user.perfil not in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+			messages.error(request, "Você não tem permissão para emitir certificados.")
+			return redirect('emissao-certificado')
+		
 		data = request.POST
 		errors: list[str] = []
 
@@ -340,6 +565,11 @@ class EmissaoCertificadoView(PostFeedbackMixin, TemplateView):
 			inscricao = Inscricao.objects.select_related("evento", "participante").get(pk=inscricao_id)
 		except Inscricao.DoesNotExist:
 			return self.render_post_response(errors=["Inscrição selecionada não foi encontrada."])
+
+		# Validate ORGANIZADOR can only issue certificates for their own events
+		if request.user.perfil == PerfilChoices.ORGANIZADOR:
+			if inscricao.evento.organizador != request.user:
+				return self.render_post_response(errors=["Você não tem permissão para emitir certificado para este evento."])
 
 		if inscricao.status != InscricaoStatus.CONFIRMADA or not inscricao.presenca_confirmada:
 			return self.render_post_response(errors=["A inscrição precisa estar confirmada com presença registrada."])
@@ -394,5 +624,185 @@ class AutenticacaoView(PostFeedbackMixin, TemplateView):
 			request.session.set_expiry(None)
 		else:
 			request.session.set_expiry(0)
-		success = f"Autenticado como {user.get_username()}."
-		return self.render_post_response(success=success, clear_data=True)
+		
+		messages.success(request, f"Bem-vindo, {user.nome if hasattr(user, 'nome') else user.get_username()}!")
+		return redirect('dashboard')
+
+
+@method_decorator(organizador_or_admin_required, name='dispatch')
+class PresencaView(PostFeedbackMixin, TemplateView):
+	template_name = "api/presenca.html"
+
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		
+		# Get all events (for organizador, filter by their events)
+		if self.request.user.perfil == PerfilChoices.ORGANIZADOR:
+			context["eventos"] = Evento.objects.filter(
+				organizador=self.request.user
+			).order_by("-data_inicio")
+		else:
+			context["eventos"] = Evento.objects.all().order_by("-data_inicio")
+		
+		# Get selected event if any
+		evento_id = self.request.GET.get("evento")
+		if evento_id:
+			try:
+				evento = Evento.objects.get(pk=evento_id)
+				# Verify organizer has access to this event
+				if self.request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != self.request.user:
+					messages.error(self.request, "Você não tem permissão para gerenciar este evento.")
+				else:
+					context["evento_selecionado"] = evento
+					context["inscricoes"] = Inscricao.objects.filter(
+						evento=evento,
+						status=InscricaoStatus.CONFIRMADA
+					).select_related("participante").order_by("participante__nome")
+			except Evento.DoesNotExist:
+				pass
+		
+		return context
+
+	def post(self, request, *args, **kwargs):
+		errors = []
+		evento_id = request.POST.get("evento")
+		
+		if not evento_id:
+			return self.render_post_response(errors=["Selecione um evento."])
+		
+		try:
+			evento = Evento.objects.get(pk=evento_id)
+			# Verify organizer has access
+			if request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != request.user:
+				messages.error(request, "Você não tem permissão para gerenciar este evento.")
+				return redirect('presenca')
+		except Evento.DoesNotExist:
+			return self.render_post_response(errors=["Evento não encontrado."])
+		
+		# Get all confirmed inscriptions for this event
+		inscricoes = Inscricao.objects.filter(
+			evento=evento,
+			status=InscricaoStatus.CONFIRMADA
+		)
+		
+		# Update presence for each inscription
+		updated_count = 0
+		for inscricao in inscricoes:
+			presenca_marcada = f"presenca_{inscricao.pk}" in request.POST
+			if inscricao.presenca_confirmada != presenca_marcada:
+				inscricao.presenca_confirmada = presenca_marcada
+				inscricao.save()
+				updated_count += 1
+		
+		success = f"Presenças atualizadas com sucesso! ({updated_count} alterações)"
+		return self.render_post_response(success=success)
+
+
+@method_decorator(login_required(login_url='login'), name='dispatch')
+class DashboardView(TemplateView):
+	template_name = "api/dashboard.html"
+	
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		# Add any additional context data if needed
+		return context
+
+
+@method_decorator(login_required(login_url='login'), name='dispatch')
+class DetalhesEventoView(TemplateView):
+	template_name = "api/detalhes_evento.html"
+	
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		evento_id = self.kwargs.get('evento_id')
+		context['evento'] = get_object_or_404(Evento.objects.select_related('organizador'), pk=evento_id)
+		return context
+
+
+class SignupView(PostFeedbackMixin, TemplateView):
+	"""Public signup view for ALUNO, PROFESSOR, and ORGANIZADOR"""
+	template_name = "api/signup.html"
+
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		# Only allow certain profiles for self-registration
+		context["perfis"] = [
+			(PerfilChoices.ALUNO, "Aluno"),
+			(PerfilChoices.PROFESSOR, "Professor"),
+			(PerfilChoices.ORGANIZADOR, "Organizador"),
+		]
+		context["instituicoes"] = InstituicaoChoices.choices
+		return context
+
+	def post(self, request, *args, **kwargs):
+		data = request.POST
+		errors: list[str] = []
+
+		nome = data.get("nome", "").strip()
+		username = data.get("username", "").strip()
+		email = data.get("email", "").strip()
+		telefone = data.get("telefone", "").strip()
+		perfil = data.get("perfil", "").strip()
+		instituicao_raw = data.get("instituicao", "").strip()
+		senha = data.get("senha", "").strip()
+		confirmar_senha = data.get("confirmar_senha", "").strip()
+
+		if not nome:
+			errors.append("Informe o nome completo.")
+		if not username:
+			errors.append("Informe o usuário de login.")
+		if not email:
+			errors.append("Informe o e-mail.")
+		if not telefone:
+			errors.append("Informe o telefone.")
+		if not perfil:
+			errors.append("Selecione um perfil válido.")
+		elif perfil not in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR, PerfilChoices.ORGANIZADOR]:
+			errors.append("Perfil selecionado não é permitido para auto-cadastro.")
+
+		# Validate password
+		password_error = _validate_password(senha)
+		if password_error:
+			errors.append(password_error)
+		elif senha != confirmar_senha:
+			errors.append("As senhas não coincidem.")
+
+		instituicao = instituicao_raw or None
+		if perfil in {PerfilChoices.ALUNO, PerfilChoices.PROFESSOR} and not instituicao:
+			errors.append("Instituição é obrigatória para alunos e professores.")
+
+		if errors:
+			return self.render_post_response(errors=errors)
+
+		try:
+			usuario = Usuario.objects.create_user(
+				username=username,
+				password=senha,
+				email=email,
+				nome=nome,
+				telefone=telefone,
+				perfil=perfil,
+				instituicao=instituicao,
+			)
+			
+			# Auto-login the user after successful registration
+			login(request, usuario)
+			
+			messages.success(request, f"Conta criada com sucesso! Bem-vindo, {usuario.nome}!")
+			return redirect('dashboard')
+			
+		except ValidationError as exc:
+			errors.extend(_flatten_validation_errors(exc))
+		except IntegrityError:
+			errors.append("Usuário ou e-mail já cadastrado.")
+
+		if errors:
+			return self.render_post_response(errors=errors)
+
+		return self.render_post_response(success="Conta criada com sucesso! Você será redirecionado...")
+
+
+def logout_view(request):
+	logout(request)
+	messages.success(request, "Você foi desconectado com sucesso.")
+	return redirect('login')

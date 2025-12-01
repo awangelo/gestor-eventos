@@ -1,2 +1,4 @@
 django==5.0.7
 fpdf2==2.7.9
+Pillow
+djangorestframework

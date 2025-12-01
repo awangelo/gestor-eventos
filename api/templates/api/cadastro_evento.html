@@ -11,7 +11,7 @@
 <section class="prototype-grid">
     <article class="prototype-card">
         <span class="badge">Formulário do evento</span>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% if form_errors %}
                 <div class="alert alert-error">
@@ -44,19 +44,23 @@
             </div>
             <div class="form-group">
                 <label for="evento-inicio">Data de início</label>
-                <input id="evento-inicio" name="data_inicio" type="date" value="{{ form_data.data_inicio|default:'' }}">
+                <input id="evento-inicio" name="data_inicio" type="text" value="{{ form_data.data_inicio|default:'' }}" placeholder="YYYY-MM-DD">
             </div>
             <div class="form-group">
                 <label for="evento-fim">Data de término</label>
-                <input id="evento-fim" name="data_fim" type="date" value="{{ form_data.data_fim|default:'' }}">
+                <input id="evento-fim" name="data_fim" type="text" value="{{ form_data.data_fim|default:'' }}" placeholder="YYYY-MM-DD">
             </div>
             <div class="form-group">
                 <label for="evento-horario">Horário</label>
-                <input id="evento-horario" name="horario" type="time" value="{{ form_data.horario|default:'' }}">
+                <input id="evento-horario" name="horario" type="text" value="{{ form_data.horario|default:'' }}" placeholder="HH:MM">
             </div>
             <div class="form-group">
                 <label for="evento-capacidade">Capacidade</label>
                 <input id="evento-capacidade" name="capacidade" type="number" min="1" step="1" placeholder="100" value="{{ form_data.capacidade|default:'' }}">
+            </div>
+            <div class="form-group">
+                <label for="evento-banner">Banner do evento</label>
+                <input id="evento-banner" name="banner" type="file" accept="image/*">
             </div>
             <div class="form-group">
                 <label for="evento-organizador">Organizador responsável</label>
@@ -76,11 +80,76 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="form-group">
+                <label for="evento-professor">Professor responsável</label>
+                <select id="evento-professor" name="professor_responsavel" required>
+                    <option value="">Selecione</option>
+                    {% for professor in professores %}
+                        <option value="{{ professor.pk }}" {% if form_data.professor_responsavel == professor.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ professor.nome|default:professor.get_full_name|default:professor.username }}
+                            {% if professor.instituicao %}
+                                · {{ professor.get_instituicao_display|default:professor.instituicao }}
+                            {% endif %}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhum professor cadastrado</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="form-actions">
                 <button type="submit" class="btn primary">Salvar evento</button>
-                <button type="button" class="btn secondary">Duplicar dados</button>
             </div>
         </form>
     </article>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function(){
+        $("#evento-inicio, #evento-fim").datepicker({
+            dateFormat: "yy-mm-dd"
+        });
+        
+        $("#evento-horario").timepicker({
+            timeFormat: 'H:i',
+            interval: 30,
+            minTime: '00:00',
+            maxTime: '23:30',
+            startTime: '08:00',
+            dynamic: false,
+            dropdown: true,
+            scrollbar: true
+        });
+
+        $('form').on('submit', function(e) {
+            var banner = $('#evento-banner')[0].files[0];
+            if (banner) {
+                // Validate file type
+                var fileType = banner['type'];
+                var validImageTypes = ['image/gif', 'image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/svg+xml'];
+                if ($.inArray(fileType, validImageTypes) < 0) {
+                    alert("Formato de arquivo inválido. Use: .jpg, .jpeg, .png, .gif, .bmp, .webp, .svg");
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Validate file size (max 5MB)
+                var maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                if (banner.size > maxSize) {
+                    alert("A imagem deve ter no máximo 5MB.");
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            
+            var capacidade = $('#evento-capacidade').val();
+            if (capacidade && parseInt(capacidade) <= 0) {
+                 alert("A capacidade deve ser um número positivo.");
+                 e.preventDefault();
+                 return false;
+            }
+        });
+    });
+</script>
 {% endblock %}

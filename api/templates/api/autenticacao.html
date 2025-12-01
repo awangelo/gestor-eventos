@@ -32,17 +32,16 @@
             <label for="login-password">Senha</label>
             <input id="login-password" name="password" type="password" placeholder="••••••••">
         </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" name="remember_me" {% if form_data.remember_me %}checked{% endif %}> Permanecer conectado
-            </label>
-        </div>
         <div class="form-actions">
             <button type="submit" class="btn primary">Entrar</button>
-            <a class="btn secondary" href="#">Acessar como convidado</a>
         </div>
-        <p class="muted" style="margin-top: 1rem;">
+        <p class="muted" style="margin-top: 1rem; text-align: center;">
             Esqueceu a senha? <a class="link-inline" href="#">Solicitar redefinição</a>
+        </p>
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid rgba(15, 23, 42, 0.1);">
+        <p class="muted" style="text-align: center; font-size: 0.9rem;">
+            <strong>Não tem uma conta?</strong><br>
+            <a class="link-inline" href="{% url 'signup' %}" style="font-size: 1rem; font-weight: 600;">Criar conta agora</a>
         </p>
     </form>
 </div>

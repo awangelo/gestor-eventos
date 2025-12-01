@@ -1,0 +1,105 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Confirmar Presença{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Confirmar Presença</h1>
+    <p>Marque a presença dos participantes que compareceram ao evento.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card">
+        <span class="badge">Selecionar Evento</span>
+        <form method="get">
+            <div class="form-group">
+                <label for="evento-select">Evento</label>
+                <select id="evento-select" name="evento" onchange="this.form.submit()">
+                    <option value="">Selecione um evento</option>
+                    {% for evento in eventos %}
+                        <option value="{{ evento.pk }}" {% if evento_selecionado and evento.pk == evento_selecionado.pk %}selected{% endif %}>
+                            {{ evento.titulo|default:evento.get_tipo_display }} · {{ evento.data_inicio|date:"d/m/Y" }} · {{ evento.local }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </article>
+
+    {% if evento_selecionado %}
+        <article class="prototype-card">
+            <span class="badge">Evento: {{ evento_selecionado.titulo|default:evento_selecionado.get_tipo_display }}</span>
+            <p><strong>Local:</strong> {{ evento_selecionado.local }}</p>
+            <p><strong>Data:</strong> {{ evento_selecionado.data_inicio|date:"d/m/Y" }} 
+                {% if evento_selecionado.data_fim and evento_selecionado.data_fim != evento_selecionado.data_inicio %}
+                    a {{ evento_selecionado.data_fim|date:"d/m/Y" }}
+                {% endif %}
+            </p>
+            <p><strong>Inscrições Confirmadas:</strong> {{ inscricoes.count }}</p>
+        </article>
+
+        {% if inscricoes %}
+            <article class="prototype-card" style="grid-column: 1 / -1;">
+                <span class="badge">Lista de Presença</span>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="evento" value="{{ evento_selecionado.pk }}">
+                    
+                    {% if form_errors %}
+                        <div class="alert alert-error">
+                            <ul>
+                                {% for error in form_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    {% if form_success %}
+                        <div class="alert alert-success">{{ form_success }}</div>
+                    {% endif %}
+
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e5e7eb;">
+                                <th style="text-align: left; padding: 0.75rem;">Participante</th>
+                                <th style="text-align: left; padding: 0.75rem;">Perfil</th>
+                                <th style="text-align: left; padding: 0.75rem;">Instituição</th>
+                                <th style="text-align: center; padding: 0.75rem;">Presença</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inscricao in inscricoes %}
+                                <tr style="border-bottom: 1px solid #e5e7eb;">
+                                    <td style="padding: 0.75rem;">{{ inscricao.participante.nome }}</td>
+                                    <td style="padding: 0.75rem;">{{ inscricao.participante.get_perfil_display }}</td>
+                                    <td style="padding: 0.75rem;">
+                                        {% if inscricao.participante.instituicao %}
+                                            {{ inscricao.participante.get_instituicao_display }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td style="text-align: center; padding: 0.75rem;">
+                                        <input type="checkbox" 
+                                               name="presenca_{{ inscricao.pk }}" 
+                                               {% if inscricao.presenca_confirmada %}checked{% endif %}>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="form-actions" style="margin-top: 1.5rem;">
+                        <button type="submit" class="btn primary">Salvar Presenças</button>
+                    </div>
+                </form>
+            </article>
+        {% else %}
+            <article class="prototype-card">
+                <span class="badge">Info</span>
+                <p>Não há inscrições confirmadas para este evento.</p>
+            </article>
+        {% endif %}
+    {% endif %}
+</section>
+{% endblock %}

@@ -77,15 +77,27 @@ class InscricaoStatus(models.TextChoices):
 
 class Evento(models.Model):
     tipo = models.CharField(max_length=20, choices=TipoEventoChoices.choices)
+    titulo = models.CharField(max_length=150, blank=True, default="")
     data_inicio = models.DateField()
     data_fim = models.DateField()
+    horario = models.TimeField(null=True, blank=True)
     local = models.CharField(max_length=150)
     capacidade = models.PositiveIntegerField()
+    banner = models.ImageField(upload_to='banners/', blank=True, null=True)
     organizador = models.ForeignKey(
         Usuario,
         on_delete=models.PROTECT,
         related_name="eventos_organizados",
         limit_choices_to=Q(perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR])
+    )
+    professor_responsavel = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        related_name="eventos_responsavel",
+        limit_choices_to=Q(perfil=PerfilChoices.PROFESSOR),
+        help_text="Professor responsável pelo evento",
+        null=True,
+        blank=True,
     )
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -114,6 +126,8 @@ class Evento(models.Model):
             raise ValidationError({"data_fim": "Data fim não pode ser anterior à data início."})
         if self.organizador and self.organizador.perfil not in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
             raise ValidationError({"organizador": "Usuário deve ter perfil ADMIN ou ORGANIZADOR."})
+        if self.professor_responsavel and self.professor_responsavel.perfil != PerfilChoices.PROFESSOR:
+            raise ValidationError({"professor_responsavel": "O responsável deve ter perfil PROFESSOR."})
 
     def __str__(self):
         return f"{self.tipo} - {self.local} ({self.data_inicio})"

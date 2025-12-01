@@ -4,78 +4,109 @@
 
 {% block content %}
 <section class="prototype-hero">
-    <h1>Inscrição de usuários em eventos</h1>
-    <p>Pessoas com perfil de aluno ou professor escolhem um evento disponível, verificam vagas e confirmam a inscrição.</p>
+    <h1>Inscrição em eventos</h1>
+    {% if request.user.perfil == 'ALUNO' or request.user.perfil == 'PROFESSOR' %}
+        <p>Escolha um evento disponível e faça sua inscrição.</p>
+    {% else %}
+        <p>Gerenciar inscrições de participantes em eventos.</p>
+    {% endif %}
 </section>
 
-<section class="prototype-grid">
-    <article class="prototype-card">
-        <span class="badge">Seleção do evento</span>
-        <form method="post">
-            {% csrf_token %}
-            {% if form_errors %}
-                <div class="alert alert-error">
-                    <ul>
-                        {% for error in form_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+{% if eventos %}
+<section id="eventos-lista" style="margin-top: 1rem; margin-bottom: 3rem;">
+    <h2 style="margin-bottom: 2rem; font-size: 1.75rem;">Eventos Disponíveis</h2>
+    <div class="prototype-grid">
+        {% for evento in eventos %}
+        <article class="prototype-card">
+            {% if evento.banner %}
+                <img src="{{ evento.banner.url }}" 
+                     alt="Banner {{ evento.titulo|default:evento.get_tipo_display }}"
+                     style="width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 1rem;">
             {% endif %}
-            {% if form_success %}
-                <div class="alert alert-success">{{ form_success }}</div>
-            {% endif %}
-            <div class="form-group">
-                <label for="inscricao-evento">Evento</label>
-                <select id="inscricao-evento" name="evento">
-                    <option value="">Escolha um evento</option>
-                    {% for evento in eventos %}
-                        <option value="{{ evento.pk }}" {% if form_data.evento == evento.pk|stringformat:"s" %}selected{% endif %}>
-                            {{ evento.get_tipo_display }} · {{ evento.data_inicio|date:"d/m" }}
-                            {% if evento.data_fim and evento.data_fim != evento.data_inicio %}
-                                a {{ evento.data_fim|date:"d/m" }}
-                            {% endif %}
-                            · {{ evento.local }} · Vagas: {{ evento.vagas_disponiveis }}
-                        </option>
-                    {% empty %}
-                        <option value="" disabled>Nenhum evento disponível</option>
-                    {% endfor %}
-                </select>
+            <span class="badge">{{ evento.get_tipo_display }}</span>
+            <h3 style="margin: 0.5rem 0 0.75rem; font-size: 1.25rem; color: var(--text);">{{ evento.titulo|default:evento.get_tipo_display }}</h3>
+            <p style="color: var(--muted); font-size: 0.925rem; line-height: 1.7; flex: 1;">
+                📅 {{ evento.data_inicio|date:"d/m/Y" }}
+                {% if evento.data_fim != evento.data_inicio %}a {{ evento.data_fim|date:"d/m/Y" }}{% endif %}<br>
+                📍 {{ evento.local }}<br>
+                👥 {{ evento.vagas_disponiveis }} vagas disponíveis
+            </p>
+            <div class="form-actions" style="margin-top: 1.25rem;">
+                <a href="{% url 'detalhes-evento' evento.pk %}" class="btn primary" style="width: 100%; text-align: center;">Ver Detalhes</a>
             </div>
-            <div class="form-group">
-                <label for="inscricao-usuario">Participante</label>
-                <select id="inscricao-usuario" name="participante">
-                    <option value="">Selecionar usuário</option>
-                    {% for participante in participantes %}
-                        <option value="{{ participante.pk }}" {% if form_data.participante == participante.pk|stringformat:"s" %}selected{% endif %}>
-                            {{ participante.nome }} · {{ participante.get_perfil_display }}
-                            {% if participante.instituicao %}
-                                · {{ participante.get_instituicao_display|default:participante.instituicao }}
-                            {% endif %}
-                        </option>
-                    {% empty %}
-                        <option value="" disabled>Nenhum participante elegível encontrado</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="inscricao-status">Status</label>
-                <select id="inscricao-status" name="status">
-                    {% for value, label in status_inscricao %}
-                        <option value="{{ value }}" {% if form_data.status == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="presenca_confirmada" {% if form_data.presenca_confirmada %}checked{% endif %}> Presença confirmada
-                </label>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn primary">Atualizar inscrição</button>
-                <button type="button" class="btn secondary">Cancelar inscrição</button>
-            </div>
-        </form>
-    </article>
+        </article>
+        {% endfor %}
+    </div>
 </section>
+{% endif %}
+
+{% if participantes %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const eventoSelect = document.getElementById('inscricao-evento');
+    const participanteSelect = document.getElementById('inscricao-usuario');
+    
+    // Store original options with their data
+    const allParticipantes = Array.from(participanteSelect.options).slice(1).map(opt => {
+        return {
+            value: opt.value,
+            text: opt.textContent,
+            selected: opt.selected
+        };
+    });
+    
+    // Event-participant mapping and status from backend
+    const eventoParticipantes = {{ evento_participantes_json|safe }};
+    const inscricaoStatusMap = {{ inscricao_status_map_json|safe }};
+    
+    eventoSelect.addEventListener('change', function() {
+        const selectedEventoId = parseInt(this.value);
+        
+        // Clear current options except the first one
+        participanteSelect.innerHTML = '<option value="">Selecionar usuário</option>';
+        
+        if (!selectedEventoId) {
+            // If no event selected, show all participants without status
+            allParticipantes.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.value;
+                opt.textContent = p.text;
+                participanteSelect.appendChild(opt);
+            });
+            return;
+        }
+        
+        // Get participants inscribed in this event
+        const inscribedParticipantIds = eventoParticipantes[selectedEventoId] || [];
+        
+        if (inscribedParticipantIds.length === 0) {
+            // No inscriptions yet for this event
+            const noOption = document.createElement('option');
+            noOption.value = '';
+            noOption.disabled = true;
+            noOption.textContent = 'Nenhuma inscrição neste evento ainda';
+            participanteSelect.appendChild(noOption);
+        } else {
+            // Filter and show only inscribed participants with their status
+            allParticipantes.forEach(p => {
+                const participantId = parseInt(p.value);
+                if (inscribedParticipantIds.includes(participantId)) {
+                    const opt = document.createElement('option');
+                    opt.value = p.value;
+                    
+                    // Get status for this participant in this event
+                    const statusKey = `${selectedEventoId}_${participantId}`;
+                    const status = inscricaoStatusMap[statusKey] || '';
+                    
+                    // Append status to the option text
+                    opt.textContent = status ? `${p.text} - (${status})` : p.text;
+                    
+                    participanteSelect.appendChild(opt);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

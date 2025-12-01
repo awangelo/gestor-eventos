@@ -10,17 +10,37 @@
 <body>
     <header class="topbar">
         <div class="container">
-            <a class="brand" href="{% url 'home' %}">SGEA</a>
+            <a class="brand" href="{% if request.user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">SGEA</a>
+            {% if request.user.is_authenticated %}
             <nav class="topbar-nav">
-                <a href="{% url 'prototype-cadastro-usuario' %}">Cadastro de usuários</a>
-                <a href="{% url 'prototype-cadastro-evento' %}">Cadastro de eventos</a>
-                <a href="{% url 'prototype-inscricao-usuario' %}">Inscrições</a>
-                <a href="{% url 'prototype-emissao-certificado' %}">Certificados</a>
-                <a href="{% url 'prototype-autenticacao' %}">Autenticação</a>
+                {% if request.user.perfil == 'ADMIN' %}
+                    <a href="{% url 'cadastro-usuario' %}">Cadastro de usuários</a>
+                    <a href="{% url 'cadastro-evento' %}">Cadastro de eventos</a>
+                    <a href="{% url 'inscricao-usuario' %}">Inscrições</a>
+                    <a href="{% url 'presenca' %}">Presença</a>
+                    <a href="{% url 'emissao-certificado' %}">Certificados</a>
+                {% elif request.user.perfil == 'ORGANIZADOR' %}
+                    <a href="{% url 'cadastro-evento' %}">Cadastro de eventos</a>
+                    <a href="{% url 'inscricao-usuario' %}">Inscrições</a>
+                    <a href="{% url 'presenca' %}">Presença</a>
+                    <a href="{% url 'emissao-certificado' %}">Emitir Certificados</a>
+                {% elif request.user.perfil == 'ALUNO' or request.user.perfil == 'PROFESSOR' %}
+                    <a href="{% url 'inscricao-usuario' %}">Fazer Inscrição</a>
+                    <a href="{% url 'emissao-certificado' %}">Meus Certificados</a>
+                {% endif %}
+                <a href="{% url 'logout' %}">Sair</a>
             </nav>
+            {% endif %}
         </div>
     </header>
     <main class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
     <footer class="footer">
@@ -29,5 +49,12 @@
             <p>Email: contato@sgea.local</p>
         </div>
     </footer>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.14.0/jquery.timepicker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.14.0/jquery.timepicker.min.js"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

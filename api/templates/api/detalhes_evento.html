@@ -1,0 +1,147 @@
+{% extends 'api/base.html' %}
+
+{% block title %}{{ evento.titulo|default:evento.get_tipo_display }} - Detalhes{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Detalhes do Evento</h1>
+    <p>Visualize todas as informações sobre este evento.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card" style="grid-column: 1 / -1;">
+        {% if evento.banner %}
+            <div style="margin-bottom: 1.5rem; text-align: center;">
+                <img src="{{ evento.banner.url }}" 
+                     alt="Banner do evento {{ evento.titulo|default:evento.get_tipo_display }}"
+                     style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            </div>
+        {% endif %}
+        
+        <span class="badge">{{ evento.get_tipo_display }}</span>
+        
+        {% if evento.titulo %}
+            <h2 style="margin-top: 1rem;">{{ evento.titulo }}</h2>
+        {% else %}
+            <h2 style="margin-top: 1rem;">{{ evento.get_tipo_display }}</h2>
+        {% endif %}
+        
+        <div style="margin-top: 1.5rem; display: grid; gap: 1rem;">
+            <div class="detail-row">
+                <strong>Data de Início:</strong>
+                <span>{{ evento.data_inicio|date:"d/m/Y" }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Data de Término:</strong>
+                <span>{{ evento.data_fim|date:"d/m/Y" }}</span>
+            </div>
+            
+            {% if evento.horario %}
+            <div class="detail-row">
+                <strong>Horário:</strong>
+                <span>{{ evento.horario|time:"H:i" }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="detail-row">
+                <strong>Local:</strong>
+                <span>{{ evento.local }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Capacidade:</strong>
+                <span>{{ evento.capacidade }} pessoas</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Vagas Disponíveis:</strong>
+                <span>{{ evento.vagas_disponiveis }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Organizador:</strong>
+                <span>{{ evento.organizador.nome|default:evento.organizador.username }}</span>
+            </div>
+            
+            {% if evento.professor_responsavel %}
+            <div class="detail-row">
+                <strong>Professor Responsável:</strong>
+                <span>{{ evento.professor_responsavel.nome|default:evento.professor_responsavel.username }}
+                {% if evento.professor_responsavel.instituicao %}
+                    ({{ evento.professor_responsavel.get_instituicao_display }})
+                {% endif %}
+                </span>
+            </div>
+            {% endif %}
+            
+            {% if evento.organizador.email %}
+            <div class="detail-row">
+                <strong>Contato:</strong>
+                <span>{{ evento.organizador.email }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="detail-row">
+                <strong>Criado em:</strong>
+                <span>{{ evento.criado_em|date:"d/m/Y H:i" }}</span>
+            </div>
+            
+            {% if evento.atualizado_em != evento.criado_em %}
+            <div class="detail-row">
+                <strong>Atualizado em:</strong>
+                <span>{{ evento.atualizado_em|date:"d/m/Y H:i" }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-actions" style="margin-top: 2rem;">
+            <a href="{% url 'inscricao-usuario' %}" class="btn secondary">← Voltar</a>
+            {% if request.user.perfil == 'ALUNO' or request.user.perfil == 'PROFESSOR' %}
+                {% if evento.vagas_disponiveis > 0 %}
+                    <a href="{% url 'inscricao-usuario' %}" class="btn primary">Fazer Inscrição</a>
+                {% else %}
+                    <span class="btn secondary" style="opacity: 0.5; cursor: not-allowed;">Sem Vagas</span>
+                {% endif %}
+            {% endif %}
+            {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
+                <a href="{% url 'presenca' %}" class="btn primary">Gerenciar Presença</a>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+<style>
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: rgba(37, 99, 235, 0.03);
+    border-radius: 8px;
+    align-items: center;
+}
+
+.detail-row strong {
+    color: var(--text);
+    flex-shrink: 0;
+    margin-right: 1rem;
+}
+
+.detail-row span {
+    color: var(--muted);
+    text-align: right;
+}
+
+@media (max-width: 640px) {
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .detail-row span {
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}
