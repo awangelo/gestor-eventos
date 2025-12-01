@@ -268,3 +268,127 @@ class Certificado(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
+
+
+class AcaoAuditoriaChoices(models.TextChoices):
+    # User actions
+    USUARIO_CRIADO = "USUARIO_CRIADO", "Usuário Criado"
+    USUARIO_ATUALIZADO = "USUARIO_ATUALIZADO", "Usuário Atualizado"
+    
+    # Event actions
+    EVENTO_CRIADO = "EVENTO_CRIADO", "Evento Criado"
+    EVENTO_ATUALIZADO = "EVENTO_ATUALIZADO", "Evento Atualizado"
+    EVENTO_EXCLUIDO = "EVENTO_EXCLUIDO", "Evento Excluído"
+    EVENTO_CONSULTADO_API = "EVENTO_CONSULTADO_API", "Evento Consultado via API"
+    
+    # Inscricao actions
+    INSCRICAO_CRIADA = "INSCRICAO_CRIADA", "Inscrição Criada"
+    INSCRICAO_ATUALIZADA = "INSCRICAO_ATUALIZADA", "Inscrição Atualizada"
+    INSCRICAO_CANCELADA = "INSCRICAO_CANCELADA", "Inscrição Cancelada"
+    
+    # Certificate actions
+    CERTIFICADO_GERADO = "CERTIFICADO_GERADO", "Certificado Gerado"
+    CERTIFICADO_CONSULTADO = "CERTIFICADO_CONSULTADO", "Certificado Consultado"
+    CERTIFICADO_CONSULTADO_API = "CERTIFICADO_CONSULTADO_API", "Certificado Consultado via API"
+    
+    # Authentication actions
+    LOGIN = "LOGIN", "Login"
+    LOGOUT = "LOGOUT", "Logout"
+
+
+class AuditLog(models.Model):
+    """
+    Audit log for tracking critical actions in the system.
+    
+    Tracks:
+    - User creation
+    - Event creation, updates, and deletion
+    - API queries for events
+    - Certificate generation and queries
+    - Event inscriptions
+    """
+    acao = models.CharField(
+        max_length=50,
+        choices=AcaoAuditoriaChoices.choices,
+        help_text="Tipo de ação realizada"
+    )
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="acoes_auditoria",
+        help_text="Usuário que realizou a ação"
+    )
+    usuario_afetado = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="acoes_auditoria_afetado",
+        help_text="Usuário afetado pela ação (ex: usuário criado)"
+    )
+    evento = models.ForeignKey(
+        Evento,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="acoes_auditoria",
+        help_text="Evento relacionado à ação"
+    )
+    inscricao = models.ForeignKey(
+        Inscricao,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="acoes_auditoria",
+        help_text="Inscrição relacionada à ação"
+    )
+    certificado = models.ForeignKey(
+        Certificado,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="acoes_auditoria",
+        help_text="Certificado relacionado à ação"
+    )
+    descricao = models.TextField(
+        blank=True,
+        help_text="Descrição detalhada da ação"
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text="Endereço IP de onde a ação foi realizada"
+    )
+    user_agent = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="User agent do navegador/cliente"
+    )
+    dados_extras = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Dados adicionais sobre a ação"
+    )
+    data_hora = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Data e hora da ação"
+    )
+    
+    class Meta:
+        ordering = ["-data_hora"]
+        indexes = [
+            models.Index(fields=["-data_hora"]),
+            models.Index(fields=["acao"]),
+            models.Index(fields=["usuario"]),
+            models.Index(fields=["evento"]),
+            models.Index(fields=["data_hora", "usuario"]),
+            models.Index(fields=["data_hora", "evento"]),
+        ]
+        verbose_name = "Log de Auditoria"
+        verbose_name_plural = "Logs de Auditoria"
+    
+    def __str__(self):
+        usuario_nome = self.usuario.username if self.usuario else "Sistema"
+        return f"{self.get_acao_display()} - {usuario_nome} - {self.data_hora.strftime('%d/%m/%Y %H:%M')}"

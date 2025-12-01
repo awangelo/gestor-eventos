@@ -26,6 +26,8 @@ from api.views import (
     CadastroUsuarioView,
     DashboardView,
     DetalhesEventoView,
+    EditarEventoView,
+    DeletarEventoView,
     EmissaoCertificadoView,
     InscricaoUsuarioView,
     PresencaView,
@@ -109,6 +111,8 @@ urlpatterns = [
     path('presenca/', PresencaView.as_view(), name='presenca'),
     path('certificados/', EmissaoCertificadoView.as_view(), name='emissao-certificado'),
     path('eventos/<int:evento_id>/', DetalhesEventoView.as_view(), name='detalhes-evento'),
+    path('eventos/<int:evento_id>/editar/', EditarEventoView.as_view(), name='editar-evento'),
+    path('eventos/<int:evento_id>/deletar/', DeletarEventoView.as_view(), name='deletar-evento'),
     
     # Prototypes (legacy)
     path(

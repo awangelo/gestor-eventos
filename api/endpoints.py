@@ -34,6 +34,15 @@ from .permissions import (
     IsOrganizadorOrAdmin,
     IsAlunoOrProfessor,
 )
+from .audit import (
+    log_evento_criado,
+    log_evento_atualizado,
+    log_evento_excluido,
+    log_evento_consultado_api,
+    log_inscricao_criada,
+    log_inscricao_atualizada,
+    log_certificado_consultado,
+)
 
 
 # ============================================================================
@@ -51,6 +60,9 @@ class EventoListView(generics.ListAPIView):
     def get_queryset(self):
         """Filter events based on user role."""
         user = self.request.user
+        
+        # Log API query
+        log_evento_consultado_api(self.request)
         
         # Aluno and Professor see all events
         if user.perfil in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
@@ -82,6 +94,13 @@ class EventoDetailView(generics.RetrieveAPIView):
             return Evento.objects.filter(organizador=user).select_related('organizador', 'professor_responsavel')
         
         return Evento.objects.all().select_related('organizador', 'professor_responsavel')
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Override to log API access."""
+        instance = self.get_object()
+        log_evento_consultado_api(request, instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class EventoCreateView(generics.CreateAPIView):
@@ -94,7 +113,9 @@ class EventoCreateView(generics.CreateAPIView):
     
     def perform_create(self, serializer):
         try:
-            serializer.save()
+            evento = serializer.save()
+            # Log event creation
+            log_evento_criado(self.request, evento)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)})
 
@@ -119,7 +140,14 @@ class EventoUpdateView(generics.UpdateAPIView):
     
     def perform_update(self, serializer):
         try:
-            serializer.save()
+            # Get original instance to track changes
+            instance = serializer.instance
+            # Save changes
+            evento = serializer.save()
+            
+            # Log update
+            campos_alterados = list(serializer.validated_data.keys()) if serializer.validated_data else []
+            log_evento_atualizado(self.request, evento, campos_alterados)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)})
 
@@ -140,6 +168,24 @@ class EventoDeleteView(generics.DestroyAPIView):
             return Evento.objects.filter(organizador=user)
         
         return Evento.objects.all()
+    
+    def perform_destroy(self, instance):
+        """Log deletion before destroying."""
+        # Capture event info before deletion
+        evento_info = {
+            'id': instance.id,
+            'tipo': instance.tipo,
+            'titulo': instance.titulo,
+            'local': instance.local,
+            'data_inicio': instance.data_inicio.isoformat(),
+            'data_fim': instance.data_fim.isoformat() if instance.data_fim else None,
+        }
+        
+        # Delete the instance
+        instance.delete()
+        
+        # Log after successful deletion
+        log_evento_excluido(self.request, evento_info)
 
 
 # ============================================================================
@@ -161,7 +207,9 @@ class InscricaoCreateView(generics.CreateAPIView):
             raise PermissionDenied('Organizadores não podem se inscrever em eventos.')
         
         try:
-            serializer.save()
+            inscricao = serializer.save()
+            # Log self-registration
+            log_inscricao_criada(self.request, inscricao)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)})
 
@@ -177,7 +225,9 @@ class InscricaoManageCreateView(generics.CreateAPIView):
     
     def perform_create(self, serializer):
         try:
-            serializer.save()
+            inscricao = serializer.save()
+            # Log managed registration
+            log_inscricao_criada(self.request, inscricao)
         except DjangoValidationError as e:
             raise DRFValidationError(e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)})
 
@@ -327,6 +377,13 @@ class CertificadoDetailView(generics.RetrieveAPIView):
         
         # Admin can view any
         return Certificado.objects.all()
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Override to log certificate access."""
+        instance = self.get_object()
+        log_certificado_consultado(request, instance, via_api=True)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 # ============================================================================

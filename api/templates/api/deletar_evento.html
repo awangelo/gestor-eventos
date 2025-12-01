@@ -1,0 +1,115 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Deletar Evento - {{ evento.titulo|default:evento.get_tipo_display }}{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Deletar Evento</h1>
+    <p>Confirme a exclusão do evento abaixo. Esta ação não pode ser desfeita.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card" style="grid-column: 1 / -1;">
+        <span class="badge" style="background: #ef4444;">Atenção</span>
+        
+        <div style="background: rgba(239, 68, 68, 0.1); padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0; border-left: 4px solid #ef4444;">
+            <h3 style="margin-top: 0; color: #dc2626;">Tem certeza que deseja deletar este evento?</h3>
+            <p style="margin-bottom: 0;">Esta ação é <strong>permanente</strong> e não pode ser desfeita. Todos os dados relacionados, incluindo inscrições e certificados, serão perdidos.</p>
+        </div>
+        
+        {% if evento.banner %}
+            <div style="margin-bottom: 1.5rem; text-align: center;">
+                <img src="{{ evento.banner.url }}" 
+                     alt="Banner do evento {{ evento.titulo|default:evento.get_tipo_display }}"
+                     style="max-width: 100%; height: auto; max-height: 300px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            </div>
+        {% endif %}
+        
+        <span class="badge">{{ evento.get_tipo_display }}</span>
+        
+        {% if evento.titulo %}
+            <h2 style="margin-top: 1rem;">{{ evento.titulo }}</h2>
+        {% else %}
+            <h2 style="margin-top: 1rem;">{{ evento.get_tipo_display }}</h2>
+        {% endif %}
+        
+        <div style="margin-top: 1.5rem; display: grid; gap: 1rem;">
+            <div class="detail-row">
+                <strong>Data de Início:</strong>
+                <span>{{ evento.data_inicio|date:"d/m/Y" }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Data de Término:</strong>
+                <span>{{ evento.data_fim|date:"d/m/Y" }}</span>
+            </div>
+            
+            {% if evento.horario %}
+            <div class="detail-row">
+                <strong>Horário:</strong>
+                <span>{{ evento.horario|time:"H:i" }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="detail-row">
+                <strong>Local:</strong>
+                <span>{{ evento.local }}</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Capacidade:</strong>
+                <span>{{ evento.capacidade }} vagas</span>
+            </div>
+            
+            <div class="detail-row">
+                <strong>Vagas Disponíveis:</strong>
+                <span>{{ evento.vagas_disponiveis }}</span>
+            </div>
+            
+            {% if evento.organizador %}
+            <div class="detail-row">
+                <strong>Organizador:</strong>
+                <span>{{ evento.organizador.nome|default:evento.organizador.username }}</span>
+            </div>
+            {% endif %}
+            
+            {% if evento.professor_responsavel %}
+            <div class="detail-row">
+                <strong>Professor Responsável:</strong>
+                <span>{{ evento.professor_responsavel.nome|default:evento.professor_responsavel.username }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <form method="post" style="margin-top: 2rem;">
+            {% csrf_token %}
+            <div class="form-actions">
+                <a href="{% url 'detalhes-evento' evento.pk %}" class="btn secondary">← Cancelar</a>
+                <button type="submit" class="btn primary" style="background: #ef4444;" onclick="return confirm('Você tem CERTEZA que deseja deletar este evento? Esta ação NÃO pode ser desfeita!');">Confirmar Exclusão</button>
+            </div>
+        </form>
+    </article>
+</section>
+
+<style>
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row strong {
+    color: #1e293b;
+}
+
+.detail-row span {
+    color: #64748b;
+}
+</style>
+{% endblock %}

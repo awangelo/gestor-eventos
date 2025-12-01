@@ -1,0 +1,116 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Editar Evento - {{ evento.titulo|default:evento.get_tipo_display }}{% endblock %}
+
+{% block content %}
+<section class="prototype-hero">
+    <h1>Editar Evento</h1>
+    <p>Atualize as informações do evento {{ evento.titulo|default:evento.get_tipo_display }}.</p>
+</section>
+
+<section class="prototype-grid">
+    <article class="prototype-card">
+        <span class="badge">Formulário do evento</span>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if form_errors %}
+                <div class="alert alert-error">
+                    <ul>
+                        {% for error in form_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% if form_success %}
+                <div class="alert alert-success">{{ form_success }}</div>
+            {% endif %}
+            <div class="form-group">
+                <label for="evento-tipo">Tipo</label>
+                <select id="evento-tipo" name="tipo">
+                    <option value="">Selecione</option>
+                    {% for value, label in tipos_evento %}
+                        <option value="{{ value }}" {% if evento.tipo == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="evento-titulo">Título ou tema</label>
+                <input id="evento-titulo" name="titulo" type="text" placeholder="Pesquisa e Inovação na Universidade" value="{{ evento.titulo|default:'' }}">
+            </div>
+            <div class="form-group">
+                <label for="evento-local">Local</label>
+                <input id="evento-local" name="local" type="text" placeholder="Auditório Central" value="{{ evento.local }}">
+            </div>
+            <div class="form-group">
+                <label for="evento-inicio">Data de início</label>
+                <input id="evento-inicio" name="data_inicio" type="text" value="{{ evento.data_inicio|date:'Y-m-d' }}" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group">
+                <label for="evento-fim">Data de término</label>
+                <input id="evento-fim" name="data_fim" type="text" value="{{ evento.data_fim|date:'Y-m-d' }}" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group">
+                <label for="evento-horario">Horário</label>
+                <input id="evento-horario" name="horario" type="text" value="{{ evento.horario|time:'H:i'|default:'' }}" placeholder="HH:MM">
+            </div>
+            <div class="form-group">
+                <label for="evento-capacidade">Capacidade</label>
+                <input id="evento-capacidade" name="capacidade" type="number" min="1" step="1" placeholder="100" value="{{ evento.capacidade }}">
+            </div>
+            <div class="form-group">
+                <label for="evento-banner">Banner do evento</label>
+                {% if evento.banner %}
+                    <div style="margin-bottom: 1rem;">
+                        <img src="{{ evento.banner.url }}" alt="Banner atual" style="max-width: 300px; max-height: 200px; border-radius: 8px;">
+                        <div style="margin-top: 0.5rem;">
+                            <input type="checkbox" id="remover-banner" name="remover_banner">
+                            <label for="remover-banner" style="display: inline; margin-left: 0.5rem;">Remover banner atual</label>
+                        </div>
+                    </div>
+                {% endif %}
+                <input id="evento-banner" name="banner" type="file" accept="image/*">
+                <small style="display: block; margin-top: 0.5rem; color: #666;">Envie um novo banner ou marque a opção acima para remover o atual.</small>
+            </div>
+            <div class="form-group">
+                <label for="evento-organizador">Organizador responsável</label>
+                <select id="evento-organizador" name="organizador">
+                    <option value="">Selecione</option>
+                    {% for organizador in organizadores %}
+                        <option value="{{ organizador.pk }}" {% if evento.organizador_id == organizador.pk %}selected{% endif %}>
+                            {{ organizador.nome|default:organizador.get_full_name|default:organizador.username }}
+                            {% if organizador.instituicao %}
+                                · {{ organizador.get_perfil_display }} - {{ organizador.get_instituicao_display|default:organizador.instituicao }}
+                            {% else %}
+                                · {{ organizador.get_perfil_display }}
+                            {% endif %}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhum organizador elegível encontrado</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="evento-professor">Professor responsável</label>
+                <select id="evento-professor" name="professor_responsavel" required>
+                    <option value="">Selecione</option>
+                    {% for professor in professores %}
+                        <option value="{{ professor.pk }}" {% if evento.professor_responsavel_id == professor.pk %}selected{% endif %}>
+                            {{ professor.nome|default:professor.get_full_name|default:professor.username }}
+                            {% if professor.instituicao %}
+                                · {{ professor.get_instituicao_display|default:professor.instituicao }}
+                            {% endif %}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhum professor cadastrado</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions">
+                <a href="{% url 'detalhes-evento' evento.pk %}" class="btn secondary">Cancelar</a>
+                <button type="submit" class="btn primary">Atualizar evento</button>
+            </div>
+        </form>
+    </article>
+</section>
+{% endblock %}

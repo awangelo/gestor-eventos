@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 
-from .models import Certificado, Evento, Inscricao, Usuario
+from .models import Certificado, Evento, Inscricao, Usuario, AuditLog
 
 
 class UsuarioCreationForm(UserCreationForm):
@@ -135,3 +135,47 @@ class CertificadoAdmin(admin.ModelAdmin):
 	list_filter = ("emitido_em", "emitido_por")
 	search_fields = ("codigo", "inscricao__participante__nome", "inscricao__evento__local")
 	autocomplete_fields = ("inscricao", "emitido_por")
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+	list_display = (
+		"acao",
+		"usuario",
+		"usuario_afetado",
+		"evento",
+		"data_hora",
+		"ip_address",
+	)
+	list_filter = ("acao", "data_hora")
+	search_fields = (
+		"usuario__username",
+		"usuario__nome",
+		"usuario_afetado__username",
+		"usuario_afetado__nome",
+		"evento__titulo",
+		"descricao",
+	)
+	readonly_fields = (
+		"acao",
+		"usuario",
+		"usuario_afetado",
+		"evento",
+		"inscricao",
+		"certificado",
+		"descricao",
+		"ip_address",
+		"user_agent",
+		"dados_extras",
+		"data_hora",
+	)
+	date_hierarchy = "data_hora"
+	
+	def has_add_permission(self, request):
+		# Prevent manual creation of audit logs
+		return False
+	
+	def has_delete_permission(self, request, obj=None):
+		# Only superusers can delete audit logs
+		return request.user.is_superuser
+

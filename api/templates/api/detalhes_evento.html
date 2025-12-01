@@ -106,6 +106,8 @@
             {% endif %}
             {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
                 <a href="{% url 'presenca' %}?evento={{ evento.pk }}" class="btn primary">Marcar Presença</a>
+                <a href="{% url 'editar-evento' evento.pk %}" class="btn primary" style="background: #f59e0b;">✏️ Editar Evento</a>
+                <a href="{% url 'deletar-evento' evento.pk %}" class="btn primary" style="background: #ef4444;">🗑️ Deletar Evento</a>
             {% endif %}
         </div>
     </article>

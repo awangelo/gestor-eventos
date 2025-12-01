@@ -26,6 +26,17 @@ from .models import (
 	TipoEventoChoices,
 	Usuario,
 )
+from .audit import (
+	log_usuario_criado,
+	log_evento_criado,
+	log_evento_atualizado,
+	log_evento_excluido,
+	log_inscricao_criada,
+	log_inscricao_atualizada,
+	log_inscricao_cancelada,
+	log_login,
+	log_logout,
+)
 
 
 def _validate_image_file(file) -> str | None:
@@ -187,6 +198,11 @@ class CadastroUsuarioView(PostFeedbackMixin, TemplateView):
 				perfil=perfil,
 				instituicao=instituicao,
 			)
+			
+			# Log user creation
+			criado_por = request.user if request.user.is_authenticated else None
+			log_usuario_criado(request, usuario, criado_por)
+			
 		except ValidationError as exc:
 			errors.extend(_flatten_validation_errors(exc))
 		except IntegrityError:
@@ -318,6 +334,10 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 				professor_responsavel=professor,
 				banner=banner,
 			)
+			
+			# Log event creation
+			log_evento_criado(request, evento)
+			
 		except ValidationError as exc:
 			errors.extend(_flatten_validation_errors(exc))
 		except IntegrityError:
@@ -331,6 +351,233 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 
 		success = f"Evento '{evento}' cadastrado com sucesso."
 		return self.render_post_response(success=success, clear_data=True)
+
+
+@method_decorator(organizador_or_admin_required, name='dispatch')
+class EditarEventoView(PostFeedbackMixin, TemplateView):
+	template_name = "api/editar_evento.html"
+
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		evento_id = self.kwargs.get('evento_id')
+		evento = get_object_or_404(Evento, pk=evento_id)
+		
+		# Check permission: Admin can edit any, Organizador only their own
+		if self.request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != self.request.user:
+			from django.core.exceptions import PermissionDenied
+			raise PermissionDenied("Você não tem permissão para editar este evento.")
+		
+		context["evento"] = evento
+		context["tipos_evento"] = TipoEventoChoices.choices
+		context["organizadores"] = (
+			Usuario.objects.filter(perfil__in=[
+				PerfilChoices.ADMIN,
+				PerfilChoices.ORGANIZADOR,
+			])
+			.order_by("nome", "username")
+		)
+		context["professores"] = (
+			Usuario.objects.filter(perfil=PerfilChoices.PROFESSOR)
+			.order_by("nome", "username")
+		)
+		return context
+
+	def post(self, request, *args, **kwargs):
+		evento_id = self.kwargs.get('evento_id')
+		evento = get_object_or_404(Evento, pk=evento_id)
+		
+		# Check permission
+		if request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != request.user:
+			return self.render_post_response(errors=["Você não tem permissão para editar este evento."])
+		
+		data = request.POST
+		files = request.FILES
+		errors: list[str] = []
+
+		tipo = data.get("tipo", "").strip()
+		titulo = data.get("titulo", "").strip()
+		local = data.get("local", "").strip()
+		data_inicio_raw = data.get("data_inicio")
+		data_fim_raw = data.get("data_fim")
+		horario_raw = data.get("horario")
+		capacidade_raw = data.get("capacidade")
+		organizador_id = data.get("organizador")
+		professor_id = data.get("professor_responsavel")
+		banner = files.get("banner")
+		remover_banner = data.get("remover_banner") == "on"
+
+		if not tipo:
+			errors.append("Selecione o tipo de evento.")
+		elif tipo not in dict(TipoEventoChoices.choices):
+			errors.append("Tipo de evento inválido.")
+		if not local:
+			errors.append("Informe o local do evento.")
+
+		# Validate banner image if provided
+		if banner:
+			banner_error = _validate_image_file(banner)
+			if banner_error:
+				errors.append(banner_error)
+
+		try:
+			data_inicio = date.fromisoformat(data_inicio_raw) if data_inicio_raw else None
+		except ValueError:
+			errors.append("Data de início inválida.")
+			data_inicio = None
+
+		try:
+			data_fim = date.fromisoformat(data_fim_raw) if data_fim_raw else None
+		except ValueError:
+			errors.append("Data de término inválida.")
+			data_fim = None
+
+		try:
+			capacidade = int(capacidade_raw) if capacidade_raw else None
+			if capacidade is not None and capacidade <= 0:
+				errors.append("Informe uma capacidade maior que zero.")
+		except (TypeError, ValueError):
+			capacidade = None
+			errors.append("Capacidade inválida.")
+
+		organizador = None
+		if not organizador_id:
+			errors.append("Selecione um organizador responsável.")
+		else:
+			try:
+				organizador = Usuario.objects.get(
+					pk=organizador_id,
+					perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR],
+				)
+			except Usuario.DoesNotExist:
+				errors.append("Organizador informado não é válido.")
+
+		professor = None
+		if not professor_id:
+			errors.append("Selecione um professor responsável.")
+		else:
+			try:
+				professor = Usuario.objects.get(
+					pk=professor_id,
+					perfil=PerfilChoices.PROFESSOR,
+				)
+			except Usuario.DoesNotExist:
+				errors.append("Professor informado não é válido.")
+
+		if not data_inicio:
+			errors.append("Informe a data de início.")
+		if not data_fim:
+			errors.append("Informe a data de término.")
+		if capacidade is None:
+			errors.append("Informe a capacidade do evento.")
+
+		if errors:
+			return self.render_post_response(errors=errors)
+
+		try:
+			# Track changed fields
+			campos_alterados = []
+			if evento.tipo != tipo:
+				campos_alterados.append('tipo')
+			if evento.titulo != titulo:
+				campos_alterados.append('titulo')
+			if evento.local != local:
+				campos_alterados.append('local')
+			if evento.data_inicio != data_inicio:
+				campos_alterados.append('data_inicio')
+			if evento.data_fim != data_fim:
+				campos_alterados.append('data_fim')
+			if evento.horario != (horario_raw or None):
+				campos_alterados.append('horario')
+			if evento.capacidade != capacidade:
+				campos_alterados.append('capacidade')
+			if evento.organizador_id != int(organizador_id):
+				campos_alterados.append('organizador')
+			if evento.professor_responsavel_id != int(professor_id):
+				campos_alterados.append('professor_responsavel')
+			
+			# Update fields
+			evento.tipo = tipo
+			evento.titulo = titulo
+			evento.local = local
+			evento.data_inicio = data_inicio
+			evento.data_fim = data_fim
+			evento.horario = horario_raw or None
+			evento.capacidade = capacidade
+			evento.organizador = organizador
+			evento.professor_responsavel = professor
+			
+			if banner:
+				evento.banner = banner
+				campos_alterados.append('banner')
+			elif remover_banner and evento.banner:
+				evento.banner.delete()
+				evento.banner = None
+				campos_alterados.append('banner')
+			
+			evento.save()
+			
+			# Log event update
+			log_evento_atualizado(request, evento, campos_alterados)
+			
+		except ValidationError as exc:
+			errors.extend(_flatten_validation_errors(exc))
+		except IntegrityError:
+			errors.append("Não foi possível atualizar o evento. Tente novamente.")
+		except Exception as e:
+			errors.append(f"Erro ao salvar evento: {str(e)}")
+
+		if errors:
+			return self.render_post_response(errors=errors)
+
+		messages.success(request, f"Evento '{evento}' atualizado com sucesso.")
+		return redirect('detalhes-evento', evento_id=evento.pk)
+
+
+@method_decorator(organizador_or_admin_required, name='dispatch')
+class DeletarEventoView(TemplateView):
+	template_name = "api/deletar_evento.html"
+
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		evento_id = self.kwargs.get('evento_id')
+		evento = get_object_or_404(Evento, pk=evento_id)
+		
+		# Check permission: Admin can delete any, Organizador only their own
+		if self.request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != self.request.user:
+			from django.core.exceptions import PermissionDenied
+			raise PermissionDenied("Você não tem permissão para deletar este evento.")
+		
+		context["evento"] = evento
+		return context
+
+	def post(self, request, *args, **kwargs):
+		evento_id = self.kwargs.get('evento_id')
+		evento = get_object_or_404(Evento, pk=evento_id)
+		
+		# Check permission
+		if request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != request.user:
+			messages.error(request, "Você não tem permissão para deletar este evento.")
+			return redirect('dashboard')
+		
+		# Capture event info before deletion
+		evento_info = {
+			'id': evento.id,
+			'tipo': evento.tipo,
+			'titulo': evento.titulo,
+			'local': evento.local,
+			'data_inicio': evento.data_inicio.isoformat(),
+			'data_fim': evento.data_fim.isoformat() if evento.data_fim else None,
+		}
+		evento_nome = str(evento)
+		
+		# Delete the event
+		evento.delete()
+		
+		# Log deletion
+		log_evento_excluido(request, evento_info)
+		
+		messages.success(request, f"Evento '{evento_nome}' deletado com sucesso.")
+		return redirect('dashboard')
 
 
 @method_decorator(login_required(login_url='login'), name='dispatch')
@@ -644,6 +891,10 @@ class AutenticacaoView(PostFeedbackMixin, TemplateView):
 			return self.render_post_response(errors=["Credenciais inválidas."])
 
 		login(request, user)
+		
+		# Log successful login
+		log_login(request, user)
+		
 		if data.get("remember_me") == "on":
 			request.session.set_expiry(None)
 		else:
@@ -795,8 +1046,13 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 					evento_id=evento_id,
 					participante=request.user
 				)
+				status_anterior = inscricao.status
 				inscricao.status = InscricaoStatus.CANCELADA
 				inscricao.save()
+				
+				# Log cancellation
+				log_inscricao_cancelada(request, inscricao)
+				
 				return self.render_post_response(success="Sua inscrição foi cancelada com sucesso.", clear_data=True)
 			except Inscricao.DoesNotExist:
 				return self.render_post_response(errors=["Você não possui inscrição neste evento."])
@@ -842,8 +1098,13 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 		
 		if existing_inscricao:
 			# Update existing inscricao
+			status_anterior = existing_inscricao.status
 			existing_inscricao.status = status
 			existing_inscricao.save()
+			
+			# Log update
+			log_inscricao_atualizada(request, existing_inscricao, status_anterior)
+			
 			return self.render_post_response(success="Inscrição atualizada com sucesso.", clear_data=True)
 		
 		# Create new inscricao
@@ -856,6 +1117,10 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 				participante_id=participante_id,
 				status=status,
 			)
+			
+			# Log creation
+			log_inscricao_criada(request, inscricao)
+			
 		except ValidationError as exc:
 			errors.extend(_flatten_validation_errors(exc))
 		except IntegrityError:
@@ -952,6 +1217,10 @@ class SignupView(PostFeedbackMixin, TemplateView):
 
 
 def logout_view(request):
+	# Log before logout (while we still have the user)
+	if request.user.is_authenticated:
+		log_logout(request, request.user)
+	
 	logout(request)
 	messages.success(request, "Você foi desconectado com sucesso.")
 	return redirect('login')
