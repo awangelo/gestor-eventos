@@ -408,8 +408,21 @@ class InscricaoUsuarioView(PostFeedbackMixin, TemplateView):
 			participante_id = request.user.pk
 			status = InscricaoStatus.PENDENTE
 			presenca_confirmada = False
+		elif request.user.perfil == PerfilChoices.ORGANIZADOR:
+			# ORGANIZADOR cannot register themselves, only others
+			participante_id = data.get("participante")
+			status = data.get("status", InscricaoStatus.PENDENTE)
+			presenca_confirmada = False
+			
+			if not participante_id:
+				errors.append("Selecione um participante.")
+			# Prevent organizador from selecting themselves
+			elif str(participante_id) == str(request.user.pk):
+				errors.append("Organizadores não podem se inscrever em eventos.")
+			if status not in dict(InscricaoStatus.choices):
+				errors.append("Status de inscrição inválido.")
 		else:
-			# ADMIN/ORGANIZADOR can register others
+			# ADMIN can register others
 			participante_id = data.get("participante")
 			status = data.get("status", InscricaoStatus.PENDENTE)
 			presenca_confirmada = False
@@ -424,6 +437,17 @@ class InscricaoUsuarioView(PostFeedbackMixin, TemplateView):
 
 		if errors:
 			return self.render_post_response(errors=errors)
+
+		# Additional validation: check that participante is Aluno or Professor
+		if participante_id:
+			try:
+				participante = Usuario.objects.get(pk=participante_id)
+				if participante.perfil not in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+					return self.render_post_response(errors=["Apenas alunos e professores podem ser inscritos em eventos."])
+				if participante.perfil == PerfilChoices.ORGANIZADOR:
+					return self.render_post_response(errors=["Organizadores não podem se inscrever em eventos."])
+			except Usuario.DoesNotExist:
+				return self.render_post_response(errors=["Participante não encontrado."])
 
 		# Validate ORGANIZADOR can only manage their own events
 		if request.user.perfil == PerfilChoices.ORGANIZADOR:
@@ -709,14 +733,139 @@ class DashboardView(TemplateView):
 
 
 @method_decorator(login_required(login_url='login'), name='dispatch')
-class DetalhesEventoView(TemplateView):
+class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 	template_name = "api/detalhes_evento.html"
 	
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
 		evento_id = self.kwargs.get('evento_id')
-		context['evento'] = get_object_or_404(Evento.objects.select_related('organizador'), pk=evento_id)
+		context['evento'] = get_object_or_404(
+			Evento.objects.select_related('organizador', 'professor_responsavel'), 
+			pk=evento_id
+		)
+		
+		# Check if current user has an inscricao for this event
+		if self.request.user.perfil in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+			user_inscricao = Inscricao.objects.filter(
+				evento_id=evento_id,
+				participante=self.request.user
+			).first()
+			context['user_inscricao'] = user_inscricao
+		
+		# If user is ADMIN or Organizador of this event, provide inscricao management data
+		if self.request.user.perfil in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+			# Check if user has permission to manage this event
+			if self.request.user.perfil == PerfilChoices.ADMIN or context['evento'].organizador == self.request.user:
+				# Get all inscricoes for this event
+				inscricoes = Inscricao.objects.filter(
+					evento_id=evento_id
+				).select_related('participante').order_by('participante__nome')
+				
+				context['inscricoes'] = inscricoes
+				
+				# Get all potential participants
+				all_participantes = Usuario.objects.filter(
+					perfil__in=[PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]
+				).order_by('nome')
+				
+				# Get list of already inscribed participant IDs
+				inscribed_ids = set(inscricoes.values_list('participante_id', flat=True))
+				
+				# Filter to get only non-inscribed participants
+				available_participantes = all_participantes.exclude(pk__in=inscribed_ids)
+				
+				context['participantes'] = all_participantes
+				context['available_participantes'] = available_participantes
+				context['status_inscricao'] = InscricaoStatus.choices
+		
 		return context
+	
+	def post(self, request, *args, **kwargs):
+		"""Handle inscricao management for ADMIN/Organizador and cancellation for Aluno/Professor"""
+		evento_id = self.kwargs.get('evento_id')
+		evento = get_object_or_404(Evento, pk=evento_id)
+		
+		# Handle cancellation request from Aluno/Professor
+		if 'cancel_inscricao' in request.POST:
+			if request.user.perfil not in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+				return self.render_post_response(errors=["Você não tem permissão para cancelar inscrições."])
+			
+			try:
+				inscricao = Inscricao.objects.get(
+					evento_id=evento_id,
+					participante=request.user
+				)
+				inscricao.status = InscricaoStatus.CANCELADA
+				inscricao.save()
+				return self.render_post_response(success="Sua inscrição foi cancelada com sucesso.", clear_data=True)
+			except Inscricao.DoesNotExist:
+				return self.render_post_response(errors=["Você não possui inscrição neste evento."])
+		
+		# Rest is for ADMIN/Organizador managing inscricoes
+		# Check permission
+		if request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != request.user:
+			return self.render_post_response(errors=["Você não tem permissão para gerenciar este evento."])
+		
+		if request.user.perfil not in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+			return self.render_post_response(errors=["Você não tem permissão para gerenciar inscrições."])
+		
+		data = request.POST
+		errors: list[str] = []
+		
+		participante_id = data.get("participante")
+		status = data.get("status", InscricaoStatus.PENDENTE)
+		
+		if not participante_id:
+			errors.append("Selecione um participante.")
+		
+		if status not in dict(InscricaoStatus.choices):
+			errors.append("Status de inscrição inválido.")
+		
+		if errors:
+			return self.render_post_response(errors=errors)
+		
+		# Validate that participante is Aluno or Professor
+		try:
+			participante = Usuario.objects.get(pk=participante_id)
+			if participante.perfil not in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+				return self.render_post_response(errors=["Apenas alunos e professores podem ser inscritos em eventos."])
+			if participante.perfil == PerfilChoices.ORGANIZADOR:
+				return self.render_post_response(errors=["Organizadores não podem se inscrever em eventos."])
+		except Usuario.DoesNotExist:
+			return self.render_post_response(errors=["Participante não encontrado."])
+		
+		# Check if already registered
+		existing_inscricao = Inscricao.objects.filter(
+			evento_id=evento_id,
+			participante_id=participante_id
+		).first()
+		
+		if existing_inscricao:
+			# Update existing inscricao
+			existing_inscricao.status = status
+			existing_inscricao.save()
+			return self.render_post_response(success="Inscrição atualizada com sucesso.", clear_data=True)
+		
+		# Create new inscricao
+		if status == InscricaoStatus.CONFIRMADA and evento.vagas_disponiveis <= 0:
+			return self.render_post_response(errors=["O evento não possui vagas disponíveis."])
+		
+		try:
+			inscricao = Inscricao.objects.create(
+				evento_id=evento_id,
+				participante_id=participante_id,
+				status=status,
+			)
+		except ValidationError as exc:
+			errors.extend(_flatten_validation_errors(exc))
+		except IntegrityError:
+			errors.append("Não foi possível registrar a inscrição.")
+		
+		if errors:
+			return self.render_post_response(errors=errors)
+		
+		success = "Inscrição criada com sucesso."
+		return self.render_post_response(success=success, clear_data=True)
 
 
 class SignupView(PostFeedbackMixin, TemplateView):

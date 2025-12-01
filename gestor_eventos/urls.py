@@ -32,12 +32,70 @@ from api.views import (
     SignupView,
     logout_view,
 )
-from api.endpoints import EventoListView, InscricaoCreateView
+from api.endpoints import (
+    # Event endpoints
+    EventoListView,
+    EventoDetailView,
+    EventoCreateView,
+    EventoUpdateView,
+    EventoDeleteView,
+    # Inscricao endpoints
+    InscricaoCreateView,
+    InscricaoManageCreateView,
+    MinhasInscricoesListView,
+    InscricaoUpdateView,
+    InscricaoCancelView,
+    InscricaoDeleteView,
+    # Certificado endpoints
+    MeusCertificadosListView,
+    CertificadoDetailView,
+    # Management endpoints
+    ParticipantesListView,
+    EventoInscricoesListView,
+    AuditLogView,
+)
 
 urlpatterns = [
-    path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
+    # ============================================================================
+    # API ENDPOINTS
+    # ============================================================================
+    
+    # Authentication
+    path('api/token/', obtain_auth_token, name='api_token_auth'),
+    
+    # Event management
     path('api/eventos/', EventoListView.as_view(), name='api-evento-list'),
-    path('api/inscricao/', InscricaoCreateView.as_view(), name='api-inscricao-create'),
+    path('api/eventos/<int:pk>/', EventoDetailView.as_view(), name='api-evento-detail'),
+    path('api/eventos/criar/', EventoCreateView.as_view(), name='api-evento-create'),
+    path('api/eventos/<int:pk>/editar/', EventoUpdateView.as_view(), name='api-evento-update'),
+    path('api/eventos/<int:pk>/deletar/', EventoDeleteView.as_view(), name='api-evento-delete'),
+    
+    # Inscricao management (self-registration)
+    path('api/inscricoes/', MinhasInscricoesListView.as_view(), name='api-minhas-inscricoes'),
+    path('api/inscricoes/criar/', InscricaoCreateView.as_view(), name='api-inscricao-create'),
+    path('api/inscricoes/<int:pk>/cancelar/', InscricaoCancelView.as_view(), name='api-inscricao-cancel'),
+    path('api/inscricoes/<int:pk>/deletar/', InscricaoDeleteView.as_view(), name='api-inscricao-delete'),
+    
+    # Inscricao management (admin/organizador managing others)
+    path('api/inscricoes/gerenciar/', InscricaoManageCreateView.as_view(), name='api-inscricao-manage-create'),
+    path('api/inscricoes/<int:pk>/gerenciar/', InscricaoUpdateView.as_view(), name='api-inscricao-manage-update'),
+    
+    # Event inscricoes (list all inscricoes for an event)
+    path('api/eventos/<int:evento_id>/inscricoes/', EventoInscricoesListView.as_view(), name='api-evento-inscricoes'),
+    
+    # Certificados
+    path('api/certificados/', MeusCertificadosListView.as_view(), name='api-meus-certificados'),
+    path('api/certificados/<int:pk>/', CertificadoDetailView.as_view(), name='api-certificado-detail'),
+    
+    # Participants management
+    path('api/participantes/', ParticipantesListView.as_view(), name='api-participantes-list'),
+    
+    # Audit logs
+    path('api/audit/', AuditLogView.as_view(), name='api-audit-log'),
+    
+    # ============================================================================
+    # WEB VIEWS
+    # ============================================================================
     
     path('', AutenticacaoView.as_view(), name='home'),
     path('login/', AutenticacaoView.as_view(), name='login'),
@@ -51,6 +109,8 @@ urlpatterns = [
     path('presenca/', PresencaView.as_view(), name='presenca'),
     path('certificados/', EmissaoCertificadoView.as_view(), name='emissao-certificado'),
     path('eventos/<int:evento_id>/', DetalhesEventoView.as_view(), name='detalhes-evento'),
+    
+    # Prototypes (legacy)
     path(
         'prototipos/cadastro-usuarios/',
         CadastroUsuarioView.as_view(),
@@ -76,6 +136,8 @@ urlpatterns = [
         AutenticacaoView.as_view(),
         name='prototype-autenticacao',
     ),
+    
+    # Admin
     path('admin/', admin.site.urls),
 ]
 

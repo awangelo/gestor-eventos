@@ -105,10 +105,282 @@
                 {% endif %}
             {% endif %}
             {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
-                <a href="{% url 'presenca' %}" class="btn primary">Gerenciar Presença</a>
+                <a href="{% url 'presenca' %}?evento={{ evento.pk }}" class="btn primary">Marcar Presença</a>
             {% endif %}
         </div>
     </article>
+
+    {% if request.user.perfil == 'ALUNO' or request.user.perfil == 'PROFESSOR' %}
+        {% if user_inscricao %}
+        <!-- User's Inscricao Status -->
+        <article class="prototype-card" style="grid-column: 1 / -1;">
+            <span class="badge">Sua Inscrição</span>
+            
+            {% if form_errors %}
+                <div class="alert alert-error">
+                    <ul>
+                        {% for error in form_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% if form_success %}
+                <div class="alert alert-success">{{ form_success }}</div>
+            {% endif %}
+            
+            <div style="background: rgba(37, 99, 235, 0.05); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <div style="display: grid; gap: 1rem;">
+                    <div class="detail-row">
+                        <strong>Status:</strong>
+                        <span class="badge" style="
+                            {% if user_inscricao.status == 'CONFIRMADA' %}background: #10b981;{% endif %}
+                            {% if user_inscricao.status == 'PENDENTE' %}background: #f59e0b;{% endif %}
+                            {% if user_inscricao.status == 'CANCELADA' %}background: #ef4444;{% endif %}
+                        ">
+                            {{ user_inscricao.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Data da Inscrição:</strong>
+                        <span>{{ user_inscricao.data_inscricao|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Presença Confirmada:</strong>
+                        <span>
+                            {% if user_inscricao.presenca_confirmada %}
+                                <span style="color: #10b981; font-weight: 600;">✓ Sim</span>
+                            {% else %}
+                                <span style="color: #9ca3af;">Não</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if user_inscricao.status == 'CONFIRMADA' and user_inscricao.presenca_confirmada %}
+                        <div class="detail-row">
+                            <strong>Certificado:</strong>
+                            <span>
+                                {% if user_inscricao.certificado %}
+                                    <a href="{% url 'emissao-certificado' %}" style="color: var(--primary); text-decoration: underline;">Ver Certificado</a>
+                                {% else %}
+                                    <span style="color: #9ca3af;">Aguardando emissão</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                {% if user_inscricao.status != 'CANCELADA' %}
+                    <form method="post" style="margin-top: 1.5rem;" onsubmit="return confirm('Tem certeza que deseja cancelar sua inscrição?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="cancel_inscricao" value="1">
+                        <button type="submit" class="btn secondary" style="background: #ef4444; color: white;">
+                            Cancelar Minha Inscrição
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </article>
+        {% endif %}
+    {% endif %}
+
+    {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
+    <!-- Inscricao Management Section -->
+    <article class="prototype-card" style="grid-column: 1 / -1;">
+        <span class="badge">Gerenciar Inscrições</span>
+        
+        <!-- Tabs for switching between managing existing and adding new -->
+        <div style="margin: 1.5rem 0 1rem; display: flex; gap: 0.5rem; border-bottom: 2px solid #e5e7eb;">
+            <button type="button" class="tab-btn active" onclick="switchTab('manage')" id="tab-manage">
+                Alterar Status
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('add')" id="tab-add">
+                Adicionar Novo
+            </button>
+        </div>
+        
+        <!-- Manage existing inscricoes -->
+        <div id="manage-section" class="tab-content active">
+            <p style="margin-bottom: 1.5rem;">Altere o status das inscrições existentes neste evento.</p>
+            
+            {% if inscricoes %}
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form_errors %}
+                    <div class="alert alert-error">
+                        <ul>
+                            {% for error in form_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                {% if form_success %}
+                    <div class="alert alert-success">{{ form_success }}</div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label for="inscricao-participante">Participante Inscrito</label>
+                    <select id="inscricao-participante" name="participante" required>
+                        <option value="">Selecionar participante inscrito</option>
+                        {% for inscricao in inscricoes %}
+                            <option value="{{ inscricao.participante.pk }}" 
+                                    data-status="{{ inscricao.status }}"
+                                    {% if form_data.participante == inscricao.participante.pk|stringformat:"s" %}selected{% endif %}>
+                                {{ inscricao.participante.nome }} ({{ inscricao.participante.get_perfil_display }}) - [{{ inscricao.get_status_display }}]
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <small style="color: var(--muted); display: block; margin-top: 0.5rem;">
+                        Apenas participantes já inscritos neste evento aparecem aqui.
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">Novo Status</label>
+                    <select id="status" name="status" required>
+                        <option value="">Selecionar status</option>
+                        {% for value, label in status_inscricao %}
+                            <option value="{{ value }}" {% if form_data.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn primary">Atualizar Status</button>
+                    <button type="reset" class="btn secondary">Limpar</button>
+                </div>
+            </form>
+            {% else %}
+            <p style="color: var(--muted); padding: 2rem; text-align: center; background: rgba(37, 99, 235, 0.03); border-radius: 8px;">
+                Ainda não há inscrições neste evento. Use a aba "Adicionar Novo" para registrar participantes.
+            </p>
+            {% endif %}
+        </div>
+        
+        <!-- Add new inscricao -->
+        <div id="add-section" class="tab-content" style="display: none;">
+            <p style="margin-bottom: 1.5rem;">Adicione novos participantes a este evento.</p>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form_errors %}
+                    <div class="alert alert-error">
+                        <ul>
+                            {% for error in form_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                {% if form_success %}
+                    <div class="alert alert-success">{{ form_success }}</div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label for="add-participante">Participante</label>
+                    <select id="add-participante" name="participante" required>
+                        <option value="">Selecionar participante</option>
+                        {% for participante in available_participantes %}
+                            <option value="{{ participante.pk }}">
+                                {{ participante.nome }} ({{ participante.get_perfil_display }})
+                                {% if participante.instituicao %} - {{ participante.get_instituicao_display }}{% endif %}
+                            </option>
+                        {% empty %}
+                            <option value="" disabled>Todos os participantes já estão inscritos</option>
+                        {% endfor %}
+                    </select>
+                    <small style="color: var(--muted); display: block; margin-top: 0.5rem;">
+                        Apenas participantes que ainda não estão inscritos aparecem aqui.
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-status">Status Inicial</label>
+                    <select id="add-status" name="status" required>
+                        {% for value, label in status_inscricao %}
+                            <option value="{{ value }}" {% if value == 'PENDENTE' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn primary">Adicionar Participante</button>
+                    <button type="reset" class="btn secondary">Limpar</button>
+                </div>
+            </form>
+        </div>
+    </article>
+
+    <script>
+    function switchTab(tab) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        
+        // Update content sections
+        document.querySelectorAll('.tab-content').forEach(section => {
+            section.style.display = 'none';
+        });
+        document.getElementById(tab + '-section').style.display = 'block';
+    }
+    </script>
+
+    <!-- Current Inscricoes List -->
+    {% if inscricoes %}
+    <article class="prototype-card" style="grid-column: 1 / -1;">
+        <span class="badge">Inscrições Atuais ({{ inscricoes.count }})</span>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid #e5e7eb;">
+                    <th style="text-align: left; padding: 0.75rem;">Participante</th>
+                    <th style="text-align: left; padding: 0.75rem;">Perfil</th>
+                    <th style="text-align: left; padding: 0.75rem;">Instituição</th>
+                    <th style="text-align: center; padding: 0.75rem;">Status</th>
+                    <th style="text-align: center; padding: 0.75rem;">Presença</th>
+                    <th style="text-align: center; padding: 0.75rem;">Data Inscrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inscricao in inscricoes %}
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 0.75rem;">{{ inscricao.participante.nome }}</td>
+                        <td style="padding: 0.75rem;">{{ inscricao.participante.get_perfil_display }}</td>
+                        <td style="padding: 0.75rem;">
+                            {% if inscricao.participante.instituicao %}
+                                {{ inscricao.participante.get_instituicao_display }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center; padding: 0.75rem;">
+                            <span class="badge" style="
+                                {% if inscricao.status == 'CONFIRMADA' %}background: #10b981;{% endif %}
+                                {% if inscricao.status == 'PENDENTE' %}background: #f59e0b;{% endif %}
+                                {% if inscricao.status == 'CANCELADA' %}background: #ef4444;{% endif %}
+                            ">
+                                {{ inscricao.get_status_display }}
+                            </span>
+                        </td>
+                        <td style="text-align: center; padding: 0.75rem;">
+                            {% if inscricao.presenca_confirmada %}
+                                <span style="color: #10b981;">✓</span>
+                            {% else %}
+                                <span style="color: #9ca3af;">-</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center; padding: 0.75rem;">
+                            {{ inscricao.data_inscricao|date:"d/m/Y H:i" }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+    {% endif %}
+    {% endif %}
 </section>
 
 <style>
@@ -132,6 +404,79 @@
     text-align: right;
 }
 
+.alert {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.alert-error {
+    background: #fee2e2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+}
+
+.alert-error ul {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.alert-success {
+    background: #d1fae5;
+    border-left: 4px solid #10b981;
+    color: #065f46;
+}
+
+table {
+    font-size: 0.9rem;
+}
+
+table th {
+    font-weight: 600;
+    color: var(--text);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+table tbody tr:hover {
+    background: rgba(37, 99, 235, 0.02);
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.tab-btn:hover {
+    color: var(--text);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @media (max-width: 640px) {
     .detail-row {
         flex-direction: column;
@@ -141,6 +486,15 @@
     
     .detail-row span {
         text-align: left;
+    }
+    
+    table {
+        font-size: 0.8rem;
+    }
+    
+    table th,
+    table td {
+        padding: 0.5rem !important;
     }
 }
 </style>

@@ -183,7 +183,13 @@ class Inscricao(models.Model):
             PerfilChoices.PROFESSOR,
         ]:
             raise ValidationError({
-                "participante": "Inscrições só são permitidas para alunos ou professores."
+                "participante": "Inscrições só são permitidas para alunos ou professores. Organizadores não podem se inscrever em eventos."
+            })
+        
+        # Extra validation: explicitly block ORGANIZADOR profile
+        if self.participante and self.participante.perfil == PerfilChoices.ORGANIZADOR:
+            raise ValidationError({
+                "participante": "Organizadores não podem se inscrever em eventos."
             })
 
         if not self.evento_id:
