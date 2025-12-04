@@ -46,6 +46,7 @@ class EventoSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    total_inscritos = serializers.IntegerField(read_only=True)
     vagas_disponiveis = serializers.IntegerField(read_only=True)
     
     class Meta:
@@ -54,9 +55,9 @@ class EventoSerializer(serializers.ModelSerializer):
             'id', 'tipo', 'titulo', 'data_inicio', 'data_fim', 'horario',
             'local', 'capacidade', 'banner', 'organizador', 'organizador_id',
             'professor_responsavel', 'professor_responsavel_id',
-            'vagas_disponiveis', 'criado_em', 'atualizado_em'
+            'total_inscritos', 'vagas_disponiveis', 'criado_em', 'atualizado_em'
         ]
-        read_only_fields = ['id', 'criado_em', 'atualizado_em', 'vagas_disponiveis']
+        read_only_fields = ['id', 'criado_em', 'atualizado_em', 'total_inscritos', 'vagas_disponiveis']
     
     def validate(self, attrs):
         """Validate evento data."""

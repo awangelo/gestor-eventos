@@ -86,13 +86,15 @@ class Evento(models.Model):
     banner = models.ImageField(upload_to='banners/', blank=True, null=True)
     organizador = models.ForeignKey(
         Usuario,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="eventos_organizados",
-        limit_choices_to=Q(perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR])
+        limit_choices_to=Q(perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]),
+        null=True,
+        blank=True
     )
     professor_responsavel = models.ForeignKey(
         Usuario,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="eventos_responsavel",
         limit_choices_to=Q(perfil=PerfilChoices.PROFESSOR),
         help_text="Professor responsável pelo evento",
@@ -133,9 +135,14 @@ class Evento(models.Model):
         return f"{self.tipo} - {self.local} ({self.data_inicio})"
 
     @property
+    def total_inscritos(self) -> int:
+        """Return total number of confirmed registrants."""
+        return self.inscricoes.filter(status=InscricaoStatus.CONFIRMADA).count()
+
+    @property
     def vagas_disponiveis(self) -> int:
-        confirmadas = self.inscricoes.filter(status=InscricaoStatus.CONFIRMADA).count()
-        return max(self.capacidade - confirmadas, 0)
+        """Return number of available slots."""
+        return max(self.capacidade - self.total_inscritos, 0)
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -225,9 +232,11 @@ class Certificado(models.Model):
     )
     emitido_por = models.ForeignKey(
         Usuario,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="certificados_emitidos",
-        limit_choices_to=Q(perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR])
+        limit_choices_to=Q(perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]),
+        null=True,
+        blank=True
     )
     codigo = models.CharField(
         max_length=36,

@@ -126,3 +126,15 @@ AUTH_USER_MODEL = 'api.Usuario'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Email Configuration
+# For development, print emails to console
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# For production (example using Gmail):
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'seu-email@gmail.com'
+# EMAIL_HOST_PASSWORD = 'sua-senha-de-app'
+DEFAULT_FROM_EMAIL = 'AEGS <noreply@aegs.local>'

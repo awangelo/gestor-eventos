@@ -9,7 +9,7 @@ admin, created = Usuario.objects.get_or_create(
     username='admin',
     defaults={
         'nome': 'Administrador do Sistema',
-        'email': 'admin@sgea.local',
+        'email': 'admin@aegs.local',
         'telefone': '(61) 99999-0001',
         'perfil': PerfilChoices.ADMIN,
     }
@@ -26,7 +26,7 @@ organizador, created = Usuario.objects.get_or_create(
     username='organizador',
     defaults={
         'nome': 'Maria Silva Organizadora',
-        'email': 'organizador@sgea.local',
+        'email': 'organizador@aegs.local',
         'telefone': '(61) 99999-0002',
         'perfil': PerfilChoices.ORGANIZADOR,
     }
@@ -43,7 +43,7 @@ aluno, created = Usuario.objects.get_or_create(
     username='aluno',
     defaults={
         'nome': 'João Santos Aluno',
-        'email': 'aluno@sgea.local',
+        'email': 'aluno@aegs.local',
         'telefone': '(61) 99999-0003',
         'perfil': PerfilChoices.ALUNO,
         'instituicao': InstituicaoChoices.UNB,
@@ -61,7 +61,7 @@ professor, created = Usuario.objects.get_or_create(
     username='professor',
     defaults={
         'nome': 'Ana Costa Professora',
-        'email': 'professor@sgea.local',
+        'email': 'professor@aegs.local',
         'telefone': '(61) 99999-0004',
         'perfil': PerfilChoices.PROFESSOR,
         'instituicao': InstituicaoChoices.UNB,

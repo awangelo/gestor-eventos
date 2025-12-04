@@ -1,0 +1,118 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Meu Perfil{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Meu Perfil</h1>
+    <p>Gerencie seus dados pessoais.</p>
+</section>
+
+<section class="container" style="max-width: 600px;">
+    <article class="card">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update">
+            
+            <div class="form-group">
+                <label for="nome">Nome Completo</label>
+                <input type="text" id="nome" name="nome" value="{{ user.nome }}" required class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" value="{{ user.email }}" required class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="telefone">Telefone</label>
+                <input type="tel" id="telefone" name="telefone" value="{{ user.telefone }}" class="form-control">
+            </div>
+            
+            {% if user.perfil == 'ALUNO' or user.perfil == 'PROFESSOR' %}
+            <div class="form-group">
+                <label for="instituicao">Instituição</label>
+                <select id="instituicao" name="instituicao" class="form-control">
+                    <option value="">Selecione...</option>
+                    {% for code, name in instituicoes %}
+                        <option value="{{ code }}" {% if user.instituicao == code %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            
+            <div class="form-group">
+                <label>Perfil</label>
+                <input type="text" value="{{ user.get_perfil_display }}" disabled class="form-control bg-gray">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn primary">Salvar Alterações</button>
+            </div>
+        </form>
+    </article>
+    
+    <article class="card mt-4 border-red">
+        <h3>Zona de Perigo</h3>
+        <p>A exclusão da conta é irreversível.</p>
+        <form method="post" onsubmit="return confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="btn danger">Excluir Minha Conta</button>
+        </form>
+    </article>
+</section>
+
+<style>
+    .card {
+        background: var(--surface);
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: none;
+        margin-bottom: 2rem;
+    }
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        font-size: 1rem;
+        background: #374151;
+        color: var(--text);
+    }
+    .bg-gray {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    .btn {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+    }
+    .btn.primary {
+        background: var(--primary);
+        color: white;
+    }
+    .btn.danger {
+        background: #dc2626;
+        color: white;
+    }
+    .border-red {
+        border: 1px solid #7f1d1d;
+    }
+    .mt-4 {
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}

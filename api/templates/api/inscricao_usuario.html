@@ -1,6 +1,6 @@
 {% extends 'api/base.html' %}
 
-{% block title %}Protótipo · Inscrição de Usuários{% endblock %}
+{% block title %}Inscrição de Usuários{% endblock %}
 
 {% block content %}
 <section class="prototype-hero">
@@ -29,7 +29,7 @@
                 📅 {{ evento.data_inicio|date:"d/m/Y" }}
                 {% if evento.data_fim != evento.data_inicio %}a {{ evento.data_fim|date:"d/m/Y" }}{% endif %}<br>
                 📍 {{ evento.local }}<br>
-                👥 {{ evento.vagas_disponiveis }} vagas disponíveis
+                👥 {{ evento.total_inscritos }}/{{ evento.capacidade }} inscritos · {{ evento.vagas_disponiveis }} vagas disponíveis
             </p>
             <div class="form-actions" style="margin-top: 1.25rem;">
                 <a href="{% url 'detalhes-evento' evento.pk %}" class="btn primary" style="width: 100%; text-align: center;">Ver Detalhes</a>

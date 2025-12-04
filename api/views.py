@@ -34,8 +34,14 @@ from .audit import (
 	log_inscricao_criada,
 	log_inscricao_atualizada,
 	log_inscricao_cancelada,
+	log_certificado_gerado,
 	log_login,
 	log_logout,
+)
+from .emails import (
+	enviar_email_boas_vindas,
+	enviar_email_inscricao,
+	enviar_email_certificado,
 )
 
 
@@ -353,7 +359,7 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 		return self.render_post_response(success=success, clear_data=True)
 
 
-@method_decorator(organizador_or_admin_required, name='dispatch')
+@method_decorator(perfil_required(PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR, PerfilChoices.PROFESSOR), name='dispatch')
 class EditarEventoView(PostFeedbackMixin, TemplateView):
 	template_name = "api/editar_evento.html"
 
@@ -362,8 +368,12 @@ class EditarEventoView(PostFeedbackMixin, TemplateView):
 		evento_id = self.kwargs.get('evento_id')
 		evento = get_object_or_404(Evento, pk=evento_id)
 		
-		# Check permission: Admin can edit any, Organizador only their own
+		# Check permission: Admin can edit any, Organizador only their own, Professor only if responsible
 		if self.request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != self.request.user:
+			from django.core.exceptions import PermissionDenied
+			raise PermissionDenied("Você não tem permissão para editar este evento.")
+		
+		if self.request.user.perfil == PerfilChoices.PROFESSOR and evento.professor_responsavel != self.request.user:
 			from django.core.exceptions import PermissionDenied
 			raise PermissionDenied("Você não tem permissão para editar este evento.")
 		
@@ -388,6 +398,9 @@ class EditarEventoView(PostFeedbackMixin, TemplateView):
 		
 		# Check permission
 		if request.user.perfil == PerfilChoices.ORGANIZADOR and evento.organizador != request.user:
+			return self.render_post_response(errors=["Você não tem permissão para editar este evento."])
+		
+		if request.user.perfil == PerfilChoices.PROFESSOR and evento.professor_responsavel != request.user:
 			return self.render_post_response(errors=["Você não tem permissão para editar este evento."])
 		
 		data = request.POST
@@ -730,6 +743,11 @@ class InscricaoUsuarioView(PostFeedbackMixin, TemplateView):
 		if status == InscricaoStatus.CONFIRMADA:
 			if evento.vagas_disponiveis <= 0:
 				return self.render_post_response(errors=["O evento não possui vagas disponíveis."])
+		
+		# Check capacity for students (PENDENTE) as well if the event is full
+		if request.user.perfil in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+			if evento.vagas_disponiveis <= 0:
+				return self.render_post_response(errors=["O evento não possui vagas disponíveis."])
 
 		try:
 			inscricao = Inscricao.objects.create(
@@ -863,6 +881,13 @@ class EmissaoCertificadoView(PostFeedbackMixin, TemplateView):
 					"observacoes": observacoes,
 				},
 			)
+			
+			# Log certificate generation
+			log_certificado_gerado(request, certificado)
+			
+			# Send certificate email
+			enviar_email_certificado(certificado)
+			
 		except ValidationError as exc:
 			return self.render_post_response(errors=_flatten_validation_errors(exc))
 
@@ -1121,6 +1146,9 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 			# Log creation
 			log_inscricao_criada(request, inscricao)
 			
+			# Send confirmation email
+			enviar_email_inscricao(inscricao)
+			
 		except ValidationError as exc:
 			errors.extend(_flatten_validation_errors(exc))
 		except IntegrityError:
@@ -1202,6 +1230,9 @@ class SignupView(PostFeedbackMixin, TemplateView):
 			# Auto-login the user after successful registration
 			login(request, usuario)
 			
+			# Send welcome email
+			enviar_email_boas_vindas(usuario)
+			
 			messages.success(request, f"Conta criada com sucesso! Bem-vindo, {usuario.nome}!")
 			return redirect('dashboard')
 			
@@ -1224,3 +1255,77 @@ def logout_view(request):
 	logout(request)
 	messages.success(request, "Você foi desconectado com sucesso.")
 	return redirect('login')
+
+
+@method_decorator(login_required(login_url='login'), name='dispatch')
+class MeusEventosView(TemplateView):
+    template_name = "api/meus_eventos.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get all inscriptions for the current user
+        context["inscricoes"] = (
+            Inscricao.objects.filter(participante=self.request.user)
+            .select_related("evento", "certificado")
+            .order_by("-evento__data_inicio")
+        )
+        return context
+
+
+@method_decorator(login_required(login_url='login'), name='dispatch')
+class PerfilUsuarioView(PostFeedbackMixin, TemplateView):
+    template_name = "api/perfil_usuario.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["instituicoes"] = InstituicaoChoices.choices
+        return context
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get("action")
+        
+        if action == "delete":
+            user = request.user
+            # Log logout before deleting
+            log_logout(request, user)
+            logout(request)
+            user.delete()
+            messages.success(request, "Sua conta foi excluída com sucesso.")
+            return redirect('login')
+            
+        # Update profile
+        data = request.POST
+        errors = []
+        
+        nome = data.get("nome", "").strip()
+        email = data.get("email", "").strip()
+        telefone = data.get("telefone", "").strip()
+        instituicao = data.get("instituicao", "").strip()
+        
+        if not nome:
+            errors.append("Nome é obrigatório.")
+        if not email:
+            errors.append("E-mail é obrigatório.")
+            
+        if request.user.perfil in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR] and not instituicao:
+            errors.append("Instituição é obrigatória.")
+            
+        if errors:
+            return self.render_post_response(errors=errors)
+            
+        try:
+            user = request.user
+            user.nome = nome
+            user.email = email
+            user.telefone = telefone
+            if instituicao:
+                user.instituicao = instituicao
+            user.save()
+            
+            messages.success(request, "Dados atualizados com sucesso.")
+            return redirect('perfil-usuario')
+            
+        except IntegrityError:
+            return self.render_post_response(errors=["E-mail já está em uso."])
+        except Exception as e:
+            return self.render_post_response(errors=[f"Erro ao atualizar dados: {str(e)}"])

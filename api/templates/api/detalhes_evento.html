@@ -55,6 +55,11 @@
             </div>
             
             <div class="detail-row">
+                <strong>Inscritos Confirmados:</strong>
+                <span>{{ evento.total_inscritos }} de {{ evento.capacidade }}</span>
+            </div>
+            
+            <div class="detail-row">
                 <strong>Vagas Disponíveis:</strong>
                 <span>{{ evento.vagas_disponiveis }}</span>
             </div>
@@ -106,7 +111,13 @@
             {% endif %}
             {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
                 <a href="{% url 'presenca' %}?evento={{ evento.pk }}" class="btn primary">Marcar Presença</a>
+            {% endif %}
+            
+            {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador or request.user == evento.professor_responsavel %}
                 <a href="{% url 'editar-evento' evento.pk %}" class="btn primary" style="background: #f59e0b;">✏️ Editar Evento</a>
+            {% endif %}
+            
+            {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
                 <a href="{% url 'deletar-evento' evento.pk %}" class="btn primary" style="background: #ef4444;">🗑️ Deletar Evento</a>
             {% endif %}
         </div>
@@ -162,7 +173,7 @@
                             <strong>Certificado:</strong>
                             <span>
                                 {% if user_inscricao.certificado %}
-                                    <a href="{% url 'emissao-certificado' %}" style="color: var(--primary); text-decoration: underline;">Ver Certificado</a>
+                                    <a href="{% url 'meus-eventos' %}" style="color: var(--primary); text-decoration: underline;">Ver Certificado</a>
                                 {% else %}
                                     <span style="color: #9ca3af;">Aguardando emissão</span>
                                 {% endif %}

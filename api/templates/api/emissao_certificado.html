@@ -1,6 +1,6 @@
 {% extends 'api/base.html' %}
 
-{% block title %}Protótipo · Emissão de Certificados{% endblock %}
+{% block title %}Emissão de Certificados{% endblock %}
 
 {% block content %}
 <section class="prototype-hero">
@@ -13,104 +13,106 @@
     {% endif %}
 </section>
 
-<section class="prototype-grid">
-    {% if user_role == 'issuer' %}
-        <!-- Form for ADMIN/ORGANIZADOR to issue certificates -->
-        <article class="prototype-card">
-            <span class="badge">Emitir certificado</span>
-            <form method="post">
-                {% csrf_token %}
-                {% if form_errors %}
-                    <div class="alert alert-error">
-                        <ul>
-                            {% for error in form_errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-                {% if form_success %}
-                    <div class="alert alert-success">{{ form_success }}</div>
-                {% endif %}
-                <div class="form-group">
-                    <label for="cert-inscricao">Inscrição elegível</label>
-                    <select id="cert-inscricao" name="inscricao">
-                        <option value="">Selecionar inscrição</option>
-                        {% for inscricao in inscricoes_elegiveis %}
-                            <option value="{{ inscricao.pk }}" {% if form_data.inscricao == inscricao.pk|stringformat:"s" %}selected{% endif %}>
-                                {{ inscricao.participante.nome }} · {{ inscricao.evento.titulo|default:inscricao.evento.get_tipo_display }} · {{ inscricao.evento.data_inicio|date:"d/m/Y" }}
-                            </option>
-                        {% empty %}
-                            <option value="" disabled>Nenhuma inscrição com presença confirmada encontrada</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="cert-carga">Carga horária (h)</label>
-                    <input id="cert-carga" name="carga_horaria" type="number" min="1" value="{{ form_data.carga_horaria|default:4 }}">
-                </div>
-                <div class="form-group">
-                    <label for="cert-emitido-por">Emitido por</label>
-                    <select id="cert-emitido-por" name="emitido_por">
-                        <option value="">Selecionar emissor</option>
-                        {% for emissor in emissores %}
-                            <option value="{{ emissor.pk }}" {% if form_data.emitido_por == emissor.pk|stringformat:"s" %}selected{% endif %}>
-                                {{ emissor.nome }} · {{ emissor.get_perfil_display }}
-                            </option>
-                        {% empty %}
-                            <option value="" disabled>Nenhum emissor autorizado disponível</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="cert-validade">Validade</label>
-                    <input id="cert-validade" name="validade" type="date" value="{{ form_data.validade|default:'' }}">
-                </div>
-                <div class="form-group">
-                    <label for="cert-observacoes">Observações</label>
-                    <textarea id="cert-observacoes" name="observacoes" placeholder="Notas adicionais sobre a participação.">{{ form_data.observacoes|default:'' }}</textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn primary">Emitir certificado</button>
-                </div>
-            </form>
-        </article>
-    {% else %}
-        <!-- Display certificates for ALUNO/PROFESSOR -->
-        {% if meus_certificados %}
-            {% for certificado in meus_certificados %}
-                <article class="prototype-card">
-                    <span class="badge">Certificado #{{ certificado.codigo|slice:":8" }}</span>
-                    <h3>{{ certificado.inscricao.evento.titulo|default:certificado.inscricao.evento.get_tipo_display }}</h3>
+{% if user_role == 'issuer' %}
+<section style="max-width: 600px; margin: 0 auto; padding-bottom: 3rem;">
+    <!-- Form for ADMIN/ORGANIZADOR to issue certificates -->
+    <article class="prototype-card">
+        <span class="badge">Emitir certificado</span>
+        <form method="post">
+            {% csrf_token %}
+            {% if form_errors %}
+                <div class="alert alert-error">
                     <ul>
-                        <li><strong>Evento:</strong> {{ certificado.inscricao.evento.local }}</li>
-                        <li><strong>Data:</strong> {{ certificado.inscricao.evento.data_inicio|date:"d/m/Y" }} 
-                            {% if certificado.inscricao.evento.data_fim and certificado.inscricao.evento.data_fim != certificado.inscricao.evento.data_inicio %}
-                                a {{ certificado.inscricao.evento.data_fim|date:"d/m/Y" }}
-                            {% endif %}
-                        </li>
-                        <li><strong>Carga horária:</strong> {{ certificado.carga_horaria }}h</li>
-                        <li><strong>Emitido em:</strong> {{ certificado.emitido_em|date:"d/m/Y" }}</li>
-                        <li><strong>Emitido por:</strong> {{ certificado.emitido_por.nome }}</li>
-                        {% if certificado.validade %}
-                            <li><strong>Válido até:</strong> {{ certificado.validade|date:"d/m/Y" }}</li>
-                        {% endif %}
-                        {% if certificado.observacoes %}
-                            <li><strong>Observações:</strong> {{ certificado.observacoes }}</li>
-                        {% endif %}
+                        {% for error in form_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
                     </ul>
-                    <div class="form-actions">
-                        <button class="btn secondary">Baixar PDF</button>
-                    </div>
-                </article>
-            {% endfor %}
-        {% else %}
+                </div>
+            {% endif %}
+            {% if form_success %}
+                <div class="alert alert-success">{{ form_success }}</div>
+            {% endif %}
+            <div class="form-group">
+                <label for="cert-inscricao">Inscrição elegível</label>
+                <select id="cert-inscricao" name="inscricao">
+                    <option value="">Selecionar inscrição</option>
+                    {% for inscricao in inscricoes_elegiveis %}
+                        <option value="{{ inscricao.pk }}" {% if form_data.inscricao == inscricao.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ inscricao.participante.nome }} · {{ inscricao.evento.titulo|default:inscricao.evento.get_tipo_display }} · {{ inscricao.evento.data_inicio|date:"d/m/Y" }}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhuma inscrição com presença confirmada encontrada</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cert-carga">Carga horária (h)</label>
+                <input id="cert-carga" name="carga_horaria" type="number" min="1" value="{{ form_data.carga_horaria|default:4 }}">
+            </div>
+            <div class="form-group">
+                <label for="cert-emitido-por">Emitido por</label>
+                <select id="cert-emitido-por" name="emitido_por">
+                    <option value="">Selecionar emissor</option>
+                    {% for emissor in emissores %}
+                        <option value="{{ emissor.pk }}" {% if form_data.emitido_por == emissor.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ emissor.nome }} · {{ emissor.get_perfil_display }}
+                        </option>
+                    {% empty %}
+                        <option value="" disabled>Nenhum emissor autorizado disponível</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cert-validade">Validade</label>
+                <input id="cert-validade" name="validade" type="date" value="{{ form_data.validade|default:'' }}">
+            </div>
+            <div class="form-group">
+                <label for="cert-observacoes">Observações</label>
+                <textarea id="cert-observacoes" name="observacoes" placeholder="Notas adicionais sobre a participação.">{{ form_data.observacoes|default:'' }}</textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn primary">Emitir certificado</button>
+            </div>
+        </form>
+    </article>
+</section>
+{% else %}
+<section class="prototype-grid">
+    <!-- Display certificates for ALUNO/PROFESSOR -->
+    {% if meus_certificados %}
+        {% for certificado in meus_certificados %}
             <article class="prototype-card">
-                <span class="badge">Info</span>
-                <p>Você ainda não possui certificados emitidos.</p>
-                <p>Participe de eventos e confirme sua presença para receber certificados!</p>
+                <span class="badge">Certificado #{{ certificado.codigo|slice:":8" }}</span>
+                <h3>{{ certificado.inscricao.evento.titulo|default:certificado.inscricao.evento.get_tipo_display }}</h3>
+                <ul>
+                    <li><strong>Evento:</strong> {{ certificado.inscricao.evento.local }}</li>
+                    <li><strong>Data:</strong> {{ certificado.inscricao.evento.data_inicio|date:"d/m/Y" }} 
+                        {% if certificado.inscricao.evento.data_fim and certificado.inscricao.evento.data_fim != certificado.inscricao.evento.data_inicio %}
+                            a {{ certificado.inscricao.evento.data_fim|date:"d/m/Y" }}
+                        {% endif %}
+                    </li>
+                    <li><strong>Carga horária:</strong> {{ certificado.carga_horaria }}h</li>
+                    <li><strong>Emitido em:</strong> {{ certificado.emitido_em|date:"d/m/Y" }}</li>
+                    <li><strong>Emitido por:</strong> {{ certificado.emitido_por.nome }}</li>
+                    {% if certificado.validade %}
+                        <li><strong>Válido até:</strong> {{ certificado.validade|date:"d/m/Y" }}</li>
+                    {% endif %}
+                    {% if certificado.observacoes %}
+                        <li><strong>Observações:</strong> {{ certificado.observacoes }}</li>
+                    {% endif %}
+                </ul>
+                <div class="form-actions">
+                    <button class="btn secondary">Baixar PDF</button>
+                </div>
             </article>
-        {% endif %}
+        {% endfor %}
+    {% else %}
+        <article class="prototype-card">
+            <span class="badge">Info</span>
+            <p>Você ainda não possui certificados emitidos.</p>
+            <p>Participe de eventos e confirme sua presença para receber certificados!</p>
+        </article>
     {% endif %}
 </section>
+{% endif %}
 {% endblock %}

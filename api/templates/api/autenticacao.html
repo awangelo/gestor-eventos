@@ -1,11 +1,11 @@
 {% extends 'api/base.html' %}
 
-{% block title %}Protótipo · Autenticação{% endblock %}
+{% block title %}Autenticação{% endblock %}
 
 {% block content %}
 <section class="prototype-hero">
     <h1>Tela de autenticação</h1>
-    <p>Interface unificada para login e recuperação de acesso ao SGEA.</p>
+    <p>Interface unificada para login e recuperação de acesso ao AEGS.</p>
 </section>
 
 <div class="prototype-card auth-card">
@@ -35,10 +35,7 @@
         <div class="form-actions">
             <button type="submit" class="btn primary">Entrar</button>
         </div>
-        <p class="muted" style="margin-top: 1rem; text-align: center;">
-            Esqueceu a senha? <a class="link-inline" href="#">Solicitar redefinição</a>
-        </p>
-        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid rgba(15, 23, 42, 0.1);">
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.1);">
         <p class="muted" style="text-align: center; font-size: 0.9rem;">
             <strong>Não tem uma conta?</strong><br>
             <a class="link-inline" href="{% url 'signup' %}" style="font-size: 1rem; font-weight: 600;">Criar conta agora</a>

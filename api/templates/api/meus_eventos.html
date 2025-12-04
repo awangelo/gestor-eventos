@@ -1,0 +1,121 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Meus Eventos{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Meus Eventos</h1>
+    <p>Acompanhe suas inscrições e certificados.</p>
+</section>
+
+<section class="container">
+    {% if inscricoes %}
+        <div class="grid-cards">
+            {% for inscricao in inscricoes %}
+                <article class="card">
+                    <div class="card-header">
+                        <span class="badge {{ inscricao.status|lower }}">{{ inscricao.get_status_display }}</span>
+                        <h3>{{ inscricao.evento.titulo|default:inscricao.evento.get_tipo_display }}</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li><strong>Tipo:</strong> {{ inscricao.evento.get_tipo_display }}</li>
+                            <li><strong>Data:</strong> {{ inscricao.evento.data_inicio|date:"d/m/Y" }}</li>
+                            <li><strong>Local:</strong> {{ inscricao.evento.local }}</li>
+                            <li><strong>Presença:</strong> {% if inscricao.presenca_confirmada %}Confirmada{% else %}Não confirmada{% endif %}</li>
+                        </ul>
+                        
+                        {% if inscricao.certificado %}
+                            <div class="certificate-info">
+                                <h4>Certificado Disponível</h4>
+                                <p>Código: {{ inscricao.certificado.codigo }}</p>
+                                <p>Carga Horária: {{ inscricao.certificado.carga_horaria }}h</p>
+                                <!-- In a real app, this would link to a PDF generation view -->
+                                <button class="btn btn-sm" onclick="alert('Funcionalidade de download de PDF em desenvolvimento.\nCódigo: {{ inscricao.certificado.codigo }}')">Visualizar Certificado</button>
+                            </div>
+                        {% elif inscricao.status == 'CONFIRMADA' and inscricao.presenca_confirmada %}
+                            <div class="alert alert-info">
+                                Certificado em processamento.
+                            </div>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>Você ainda não se inscreveu em nenhum evento.</p>
+            <a href="{% url 'inscricao-usuario' %}" class="btn">Ver eventos disponíveis</a>
+        </div>
+    {% endif %}
+</section>
+
+<style>
+    .grid-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    .card {
+        background: var(--surface);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: none;
+    }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .badge.confirmada { background: rgba(22, 163, 74, 0.2); color: #86efac; }
+    .badge.pendente { background: rgba(234, 179, 8, 0.2); color: #fde047; }
+    .badge.cancelada { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
+    
+    .card-body ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1rem 0;
+    }
+    .card-body li {
+        margin-bottom: 0.5rem;
+        color: var(--muted);
+    }
+    .certificate-info {
+        background: rgba(37, 99, 235, 0.1);
+        padding: 1rem;
+        border-radius: 6px;
+        border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+    .certificate-info h4 {
+        margin: 0 0 0.5rem 0;
+        color: #93c5fd;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem 0;
+        color: var(--muted);
+    }
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

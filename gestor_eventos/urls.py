@@ -33,6 +33,8 @@ from api.views import (
     PresencaView,
     SignupView,
     logout_view,
+    MeusEventosView,
+    PerfilUsuarioView,
 )
 from api.endpoints import (
     # Event endpoints
@@ -110,6 +112,8 @@ urlpatterns = [
     path('inscricao/', InscricaoUsuarioView.as_view(), name='inscricao-usuario'),
     path('presenca/', PresencaView.as_view(), name='presenca'),
     path('certificados/', EmissaoCertificadoView.as_view(), name='emissao-certificado'),
+    path('meus-eventos/', MeusEventosView.as_view(), name='meus-eventos'),
+    path('perfil/', PerfilUsuarioView.as_view(), name='perfil-usuario'),
     path('eventos/<int:evento_id>/', DetalhesEventoView.as_view(), name='detalhes-evento'),
     path('eventos/<int:evento_id>/editar/', EditarEventoView.as_view(), name='editar-evento'),
     path('eventos/<int:evento_id>/deletar/', DeletarEventoView.as_view(), name='deletar-evento'),

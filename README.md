@@ -1,4 +1,4 @@
-# Sistema de Gestão de Eventos Acadêmicos (SGEA)
+# Automação Educacional e Gestão de Sistemas (AEGS) © 2027.
 
 Projeto Django para cadastro de usuários, gerenciamento de eventos acadêmicos, inscrições e emissão de certificados.
 

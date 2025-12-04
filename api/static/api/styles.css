@@ -1,11 +1,11 @@
 :root {
-    color-scheme: light;
-    --bg: #f3f4f6;
-    --surface: #ffffff;
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --text: #1f2937;
-    --muted: #4b5563;
+    color-scheme: dark;
+    --bg: #111827;
+    --surface: #1f2937;
+    --primary: #10b981;
+    --primary-hover: #059669;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
 }
 
 * {
@@ -28,7 +28,7 @@ body {
 
 .topbar {
     background: var(--surface);
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -92,7 +92,7 @@ body {
     display: inline-block;
     padding: 0.75rem 1.5rem;
     border-radius: 999px;
-    border: 1px solid rgba(37, 99, 235, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     background: transparent;
     color: var(--primary);
     font-weight: 600;
@@ -126,13 +126,13 @@ body {
     background: var(--surface);
     border-radius: 16px;
     padding: 1.75rem;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 .card h2 {
@@ -149,7 +149,7 @@ body {
     border-radius: 18px;
     padding: 2rem;
     margin-bottom: 4rem;
-    box-shadow: 0 10px 35px rgba(15, 23, 42, 0.1);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
 }
 
 .flow ol {
@@ -211,7 +211,7 @@ body {
     background: var(--surface);
     border-radius: 16px;
     padding: 1.75rem;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
@@ -219,7 +219,7 @@ body {
 
 .prototype-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
 }
 
 .prototype-card h2 {
@@ -243,9 +243,10 @@ body {
 .form-group textarea {
     padding: 0.6rem 0.75rem;
     border-radius: 12px;
-    border: 1px solid rgba(15, 23, 42, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     font: inherit;
-    background: #f9fafb;
+    background: #374151;
+    color: var(--text);
 }
 
 .form-group textarea {
@@ -264,17 +265,17 @@ body {
 .btn.secondary {
     background: var(--surface);
     color: var(--muted);
-    border-color: rgba(15, 23, 42, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .btn.secondary:hover {
     background: var(--bg);
     color: var(--text);
-    border-color: rgba(15, 23, 42, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .prototype-meta {
-    background: rgba(37, 99, 235, 0.07);
+    background: rgba(16, 185, 129, 0.1);
     border-radius: 12px;
     padding: 1.25rem;
     font-size: 0.95rem;
@@ -284,7 +285,7 @@ body {
     display: inline-block;
     padding: 0.4rem 0.85rem;
     border-radius: 8px;
-    background: rgba(37, 99, 235, 0.1);
+    background: rgba(16, 185, 129, 0.1);
     color: var(--primary);
     font-weight: 600;
     font-size: 0.75rem;
@@ -331,17 +332,17 @@ body {
 .table-simulated th,
 .table-simulated td {
     padding: 0.7rem 0.85rem;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     text-align: left;
 }
 
 .table-simulated th {
-    background: rgba(15, 23, 42, 0.05);
+    background: rgba(255, 255, 255, 0.05);
     font-weight: 600;
 }
 
 .highlight-box {
-    background: rgba(15, 23, 42, 0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     padding: 1rem 1.25rem;
     margin-top: 1.5rem;
@@ -381,19 +382,19 @@ body {
 }
 
 .alert-error {
-    background-color: #fef2f2;
+    background-color: rgba(220, 38, 38, 0.2);
     border-color: #dc2626;
-    color: #991b1b;
+    color: #fca5a5;
 }
 
 .alert-success {
-    background-color: #f0fdf4;
+    background-color: rgba(22, 163, 74, 0.2);
     border-color: #16a34a;
-    color: #166534;
+    color: #86efac;
 }
 
 .alert-info {
-    background-color: #eff6ff;
+    background-color: rgba(37, 99, 235, 0.2);
     border-color: #2563eb;
-    color: #1e40af;
+    color: #93c5fd;
 }
