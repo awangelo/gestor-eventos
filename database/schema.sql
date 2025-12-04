@@ -1,4 +1,4 @@
--- Script de criação e população inicial do banco de dados do Sistema de Gestão de Eventos Acadêmicos (SGEA)
+-- Script de criação e população inicial do banco de dados do Sistema de Gestão de Eventos Acadêmicos (AEGS)
 -- Banco alvo: SQLite 3
 
 PRAGMA foreign_keys = OFF;

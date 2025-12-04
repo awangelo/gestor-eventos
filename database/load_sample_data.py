@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script para popular o banco de dados com dados de exemplo para o SGEA.
+Script para popular o banco de dados com dados de exemplo para o AEGS.
 Execute com: python database/load_sample_data.py
 """
 import os
@@ -343,7 +343,7 @@ def criar_certificados(inscricoes, usuarios):
 
 def main():
     """Função principal para popular o banco de dados."""
-    print("\nSGEA - Carregamento de Dados de Exemplo")
+    print("\nAEGS - Carregamento de Dados de Exemplo")
     print("=" * 60 + "\n")
     
     try:

@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SGEA{% endblock %}</title>
+    <title>{% block title %}AEGS{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'api/styles.css' %}">
 </head>
 <body>
     <header class="topbar">
         <div class="container">
-            <a class="brand" href="{% if request.user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">SGEA</a>
+            <a class="brand" href="{% if request.user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'home' %}{% endif %}">AEGS</a>
             {% if request.user.is_authenticated %}
             <nav class="topbar-nav">
                 {% if request.user.perfil == 'ADMIN' %}
