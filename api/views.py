@@ -48,7 +48,7 @@ from .emails import (
 def _validate_image_file(file) -> str | None:
 	"""
 	Validate that the uploaded file is an image.
-	Returns error message if invalid, None if valid.
+	Returns error message if invalid, None if valid. 
 	"""
 	if not file:
 		return None
