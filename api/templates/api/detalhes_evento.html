@@ -114,11 +114,11 @@
             {% endif %}
             
             {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador or request.user == evento.professor_responsavel %}
-                <a href="{% url 'editar-evento' evento.pk %}" class="btn primary" style="background: #f59e0b;">✏️ Editar Evento</a>
+                <a href="{% url 'editar-evento' evento.pk %}" class="btn primary" style="background: #f59e0b;">Editar Evento</a>
             {% endif %}
             
             {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
-                <a href="{% url 'deletar-evento' evento.pk %}" class="btn primary" style="background: #ef4444;">🗑️ Deletar Evento</a>
+                <a href="{% url 'deletar-evento' evento.pk %}" class="btn primary" style="background: #ef4444;">Deletar Evento</a>
             {% endif %}
         </div>
     </article>
@@ -370,6 +370,7 @@
                         </td>
                         <td style="text-align: center; padding: 0.75rem;">
                             <span class="badge" style="
+                                color: white;
                                 {% if inscricao.status == 'CONFIRMADA' %}background: #10b981;{% endif %}
                                 {% if inscricao.status == 'PENDENTE' %}background: #f59e0b;{% endif %}
                                 {% if inscricao.status == 'CANCELADA' %}background: #ef4444;{% endif %}

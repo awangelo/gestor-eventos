@@ -228,6 +228,7 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 	def get_context_data(self, **kwargs):
 		context = super().get_context_data(**kwargs)
 		context["tipos_evento"] = TipoEventoChoices.choices
+		context["is_admin"] = self.request.user.perfil == PerfilChoices.ADMIN
 		context["organizadores"] = (
 			Usuario.objects.filter(perfil__in=[
 				PerfilChoices.ADMIN,
@@ -292,16 +293,21 @@ class CadastroEventoView(PostFeedbackMixin, TemplateView):
 			errors.append("Capacidade inválida.")
 
 		organizador = None
-		if not organizador_id:
-			errors.append("Selecione um organizador responsável.")
+		# If user is admin, they can select any organizer; otherwise, use the current user
+		if request.user.perfil == PerfilChoices.ADMIN:
+			if not organizador_id:
+				errors.append("Selecione um organizador responsável.")
+			else:
+				try:
+					organizador = Usuario.objects.get(
+						pk=organizador_id,
+						perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR],
+					)
+				except Usuario.DoesNotExist:
+					errors.append("Organizador informado não é válido.")
 		else:
-			try:
-				organizador = Usuario.objects.get(
-					pk=organizador_id,
-					perfil__in=[PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR],
-				)
-			except Usuario.DoesNotExist:
-				errors.append("Organizador informado não é válido.")
+			# Non-admin users (organizers) are automatically set as the organizer
+			organizador = request.user
 
 		professor = None
 		if not professor_id:
@@ -732,6 +738,12 @@ class InscricaoUsuarioView(PostFeedbackMixin, TemplateView):
 			# If already registered, only allow status update
 			if request.user.perfil in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
 				# ADMIN/ORGANIZADOR can update status
+				# Warning if trying to change status when presence is confirmed
+				if existing_inscricao.presenca_confirmada and existing_inscricao.status != status:
+					messages.warning(request, f"A presença deste participante já foi confirmada. O status foi alterado de {existing_inscricao.get_status_display()} para {dict(InscricaoStatus.choices)[status]}. A presença foi removida pois o novo status não é 'Confirmada'.")
+					# Reset presence if status is not CONFIRMADA
+					if status != InscricaoStatus.CONFIRMADA:
+						existing_inscricao.presenca_confirmada = False
 				existing_inscricao.status = status
 				existing_inscricao.save()
 				return self.render_post_response(success="Inscrição atualizada com sucesso.", clear_data=True)
@@ -854,6 +866,10 @@ class EmissaoCertificadoView(PostFeedbackMixin, TemplateView):
 			inscricao = Inscricao.objects.select_related("evento", "participante").get(pk=inscricao_id)
 		except Inscricao.DoesNotExist:
 			return self.render_post_response(errors=["Inscrição selecionada não foi encontrada."])
+
+		# Validate that validade is after the event end date
+		if validade and inscricao.evento.data_fim and validade <= inscricao.evento.data_fim:
+			return self.render_post_response(errors=["A data de validade deve ser posterior à data de término do evento."])
 
 		# Validate ORGANIZADOR can only issue certificates for their own events
 		if request.user.perfil == PerfilChoices.ORGANIZADOR:
@@ -1124,6 +1140,13 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 		if existing_inscricao:
 			# Update existing inscricao
 			status_anterior = existing_inscricao.status
+			
+			# Warning if trying to change status when presence is confirmed
+			if existing_inscricao.presenca_confirmada and existing_inscricao.status != status:
+				if status != InscricaoStatus.CONFIRMADA:
+					messages.warning(request, f"A presença deste participante já foi confirmada. O status foi alterado de {existing_inscricao.get_status_display()} para {dict(InscricaoStatus.choices)[status]}. A presença foi removida pois o novo status não é 'Confirmada'.")
+					existing_inscricao.presenca_confirmada = False
+
 			existing_inscricao.status = status
 			existing_inscricao.save()
 			
