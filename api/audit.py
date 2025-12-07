@@ -184,9 +184,8 @@ def log_certificado_gerado(request, certificado: Certificado):
         usuario_afetado=certificado.inscricao.participante,
         evento=certificado.inscricao.evento,
         certificado=certificado,
-        descricao=f"Certificado gerado para '{certificado.inscricao.participante.nome}' - Código: {certificado.codigo}",
+        descricao=f"Certificado gerado para '{certificado.inscricao.participante.nome}'",
         dados_extras={
-            'codigo': str(certificado.codigo),
             'carga_horaria': certificado.carga_horaria
         }
     )
@@ -201,8 +200,8 @@ def log_certificado_consultado(request, certificado: Certificado, via_api: bool 
         request=request,
         usuario_afetado=certificado.inscricao.participante,
         certificado=certificado,
-        descricao=f"Certificado {certificado.codigo} consultado" + (" via API" if via_api else ""),
-        dados_extras={'codigo': str(certificado.codigo)}
+        descricao=f"Certificado consultado" + (" via API" if via_api else ""),
+        dados_extras={}
     )
 
 

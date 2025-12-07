@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 
-from .models import Certificado, Evento, Inscricao, Usuario, AuditLog
+from .models import Certificado, Evento, Inscricao, Usuario, AuditLog, AcaoAuditoriaChoices
+from .audit import log_action
 
 
 class UsuarioCreationForm(UserCreationForm):
@@ -108,6 +109,37 @@ class EventoAdmin(admin.ModelAdmin):
 	date_hierarchy = "data_inicio"
 	inlines = [InscricaoInline]
 
+	def delete_model(self, request, obj):
+		# Capture info before delete
+		evento_info = {
+			'id': obj.id,
+			'titulo': obj.titulo,
+			'tipo': obj.tipo
+		}
+		super().delete_model(request, obj)
+		log_action(
+			acao=AcaoAuditoriaChoices.EVENTO_EXCLUIDO,
+			request=request,
+			descricao=f"Evento '{obj.titulo}' excluído via Admin.",
+			dados_extras=evento_info
+		)
+
+	def delete_queryset(self, request, queryset):
+		# For bulk delete, we iterate to log each one (or log summary)
+		for obj in queryset:
+			evento_info = {
+				'id': obj.id,
+				'titulo': obj.titulo,
+				'tipo': obj.tipo
+			}
+			log_action(
+				acao=AcaoAuditoriaChoices.EVENTO_EXCLUIDO,
+				request=request,
+				descricao=f"Evento '{obj.titulo}' excluído via Admin (Bulk).",
+				dados_extras=evento_info
+			)
+		super().delete_queryset(request, queryset)
+
 
 @admin.register(Inscricao)
 class InscricaoAdmin(admin.ModelAdmin):
@@ -126,14 +158,13 @@ class InscricaoAdmin(admin.ModelAdmin):
 @admin.register(Certificado)
 class CertificadoAdmin(admin.ModelAdmin):
 	list_display = (
-		"codigo",
 		"inscricao",
 		"emitido_por",
 		"carga_horaria",
 		"emitido_em",
 	)
 	list_filter = ("emitido_em", "emitido_por")
-	search_fields = ("codigo", "inscricao__participante__nome", "inscricao__evento__local")
+	search_fields = ("inscricao__participante__nome", "inscricao__evento__local")
 	autocomplete_fields = ("inscricao", "emitido_por")
 
 

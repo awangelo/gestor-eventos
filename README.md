@@ -49,13 +49,32 @@ Projeto Django para cadastro de usuários, gerenciamento de eventos acadêmicos,
 	python database/load_sample_data.py
 	```
 
-6. Suba o servidor de desenvolvimento e acesse o protótipo HTML/CSS:
+	**Credenciais de Acesso (Ambiente de Teste):**
+
+	| Perfil | Usuário | Senha |
+	|--------|---------|-------|
+	| **Admin** | `admin` | `Admin@123` |
+	| **Organizador** | `organizador` | `Admin@123` |
+	| **Aluno** | `aluno` | `Aluno@123` |
+	| **Professor** | `professor` | `Professor@123` |
+
+	> Outros usuários de exemplo também são criados com o padrão `Perfil@123`.
+
+6. Suba o servidor de desenvolvimento:
 
 	```bash
 	python manage.py runserver
 	```
 
 	Abra http://127.0.0.1:8000 para visualizar o layout estático (templates em `api/templates/api/` e estilos em `api/static/api/`).
+
+## Automação
+
+O sistema possui um comando para emissão automática de certificados para eventos finalizados. O comando verifica inscrições confirmadas com presença registrada e gera os certificados pendentes.
+
+```bash
+python manage.py emitir_certificados
+```
 
 ## Estrutura dos Modelos
 

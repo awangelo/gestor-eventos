@@ -8,8 +8,7 @@
     <p>Fluxo utilizado por administradores e organizadores para registrar novos perfis no sistema.</p>
 </section>
 
-<section class="prototype-grid">
-    <article class="prototype-card">
+<div class="prototype-card auth-card" style="max-width: 600px;">
         <span class="badge">Formulário principal</span>
         <form method="post">
             {% csrf_token %}
@@ -75,8 +74,7 @@
                 <button type="reset" class="btn secondary">Limpar campos</button>
             </div>
         </form>
-    </article>
-</section>
+    </div>
 {% endblock %}
 
 {% block scripts %}

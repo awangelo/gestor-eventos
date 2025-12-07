@@ -26,7 +26,7 @@ def enviar_email_boas_vindas(usuario):
             message=mensagem,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[usuario.email],
-            fail_silently=True,
+            fail_silently=False,
         )
     except Exception as e:
         print(f"Erro ao enviar email de boas-vindas: {e}")
@@ -63,7 +63,7 @@ def enviar_email_inscricao(inscricao):
             message=mensagem,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[usuario.email],
-            fail_silently=True,
+            fail_silently=False,
         )
     except Exception as e:
         print(f"Erro ao enviar email de inscrição: {e}")
@@ -82,7 +82,6 @@ def enviar_email_certificado(certificado):
     
     O certificado de sua participação no evento "{evento.titulo or evento.get_tipo_display()}" já está disponível.
     
-    Código do Certificado: {certificado.codigo}
     Carga Horária: {certificado.carga_horaria} horas
     
     Você pode visualizar e imprimir seu certificado acessando a área "Meus Eventos" no sistema.
@@ -94,12 +93,17 @@ def enviar_email_certificado(certificado):
     """
     
     try:
+        print(f"Tentando enviar email de certificado para {usuario.email}...")
         send_mail(
             subject=assunto,
             message=mensagem,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[usuario.email],
-            fail_silently=True,
+            fail_silently=False,
         )
+        print(f"Email de certificado enviado com sucesso para {usuario.email}")
     except Exception as e:
-        print(f"Erro ao enviar email de certificado: {e}")
+        print(f"ERRO CRÍTICO ao enviar email de certificado: {e}")
+        # Re-raise para que a view possa saber que falhou, se necessário, 
+        # ou pelo menos para garantir que o erro apareça nos logs do servidor.
+        raise e

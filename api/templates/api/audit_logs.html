@@ -1,0 +1,235 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Logs de Auditoria{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Logs de Auditoria</h1>
+    <p>Rastreabilidade de ações críticas do sistema.</p>
+</section>
+
+<div class="container">
+    <div class="audit-controls">
+        <form method="get" class="filter-form">
+            <div class="form-group">
+                <label for="data">Data</label>
+                <input type="date" id="data" name="data" value="{{ data_filtro|default:'' }}" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="usuario">Usuário</label>
+                <input type="text" id="usuario" name="usuario" value="{{ usuario_filtro|default:'' }}" class="form-control" placeholder="Nome ou Username">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="{% url 'audit-logs' %}" class="btn btn-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="audit-table-container">
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Ação</th>
+                    <th>Usuário</th>
+                    <th>Descrição</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="text-muted">{{ log.data_hora|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <span class="badge badge-{{ log.acao|lower|slice:':6' }}">
+                            {{ log.get_acao_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if log.usuario %}
+                            <span class="user-name">{{ log.usuario.username }}</span>
+                        {% else %}
+                            <span class="system-user">Sistema</span>
+                        {% endif %}
+                    </td>
+                    <td class="description-cell">{{ log.descricao }}</td>
+                    <td class="text-muted font-mono">{{ log.ip_address|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        Nenhum registro encontrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .audit-controls {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .filter-form {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .form-group label {
+        font-size: 0.875rem;
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    .form-control {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 0.95rem;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .audit-table-container {
+        background: var(--surface);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .audit-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    .audit-table th {
+        background: rgba(0, 0, 0, 0.2);
+        text-align: left;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .audit-table td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        vertical-align: middle;
+    }
+
+    .audit-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .audit-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text);
+    }
+
+    /* Color coding for badges based on action prefix */
+    .badge-login, .badge-logout { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .badge-evento { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-inscri { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .badge-certif { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+    .badge-usuari { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+
+    .text-muted {
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+
+    .font-mono {
+        font-family: 'SF Mono', 'Roboto Mono', monospace;
+        font-size: 0.85rem;
+    }
+
+    .user-name {
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    .system-user {
+        font-style: italic;
+        color: var(--muted);
+    }
+
+    .description-cell {
+        max-width: 400px;
+        line-height: 1.5;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem !important;
+        color: var(--muted);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text);
+        border: 1px solid transparent;
+    }
+    
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    @media (max-width: 768px) {
+        .audit-table {
+            display: block;
+            overflow-x: auto;
+        }
+        
+        .filter-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .form-actions {
+            justify-content: flex-end;
+        }
+    }
+</style>
+{% endblock %}

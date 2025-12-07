@@ -28,10 +28,8 @@
                         {% if inscricao.certificado %}
                             <div class="certificate-info">
                                 <h4>Certificado Disponível</h4>
-                                <p>Código: {{ inscricao.certificado.codigo }}</p>
                                 <p>Carga Horária: {{ inscricao.certificado.carga_horaria }}h</p>
-                                <!-- In a real app, this would link to a PDF generation view -->
-                                <button class="btn btn-sm" onclick="alert('Funcionalidade de download de PDF em desenvolvimento.\nCódigo: {{ inscricao.certificado.codigo }}')">Visualizar Certificado</button>
+                                <a href="{% url 'gerar-certificado-pdf' inscricao.certificado.pk %}" class="btn btn-sm" target="_blank">Visualizar Certificado</a>
                             </div>
                         {% elif inscricao.status == 'CONFIRMADA' and inscricao.presenca_confirmada %}
                             <div class="alert alert-info">

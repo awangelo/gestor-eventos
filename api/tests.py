@@ -113,5 +113,3 @@ class ModeloTestCase(TestCase):
 			emitido_por=self.admin,
 			carga_horaria=4,
 		)
-
-		self.assertTrue(certificado.codigo)

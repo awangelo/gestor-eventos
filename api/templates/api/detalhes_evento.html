@@ -66,7 +66,11 @@
             
             <div class="detail-row">
                 <strong>Organizador:</strong>
-                <span>{{ evento.organizador.nome|default:evento.organizador.username }}</span>
+                {% if evento.organizador %}
+                    <span>{{ evento.organizador.nome|default:evento.organizador.username }}</span>
+                {% else %}
+                    <span>Não informado</span>
+                {% endif %}
             </div>
             
             {% if evento.professor_responsavel %}
@@ -80,7 +84,7 @@
             </div>
             {% endif %}
             
-            {% if evento.organizador.email %}
+            {% if evento.organizador and evento.organizador.email %}
             <div class="detail-row">
                 <strong>Contato:</strong>
                 <span>{{ evento.organizador.email }}</span>

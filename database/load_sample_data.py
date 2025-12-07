@@ -44,7 +44,7 @@ def criar_usuarios():
     # Admin
     admin = Usuario.objects.create_user(
         username='admin',
-        password='admin123',
+        password='Admin@123',
         email='admin@sgea.local',
         nome='Administrador do Sistema',
         telefone='(61) 91111-1111',
@@ -57,7 +57,7 @@ def criar_usuarios():
     # Organizadores
     org1 = Usuario.objects.create_user(
         username='carlos.org',
-        password='senha123',
+        password='Organizador@123',
         email='carlos@sgea.local',
         nome='Carlos Organizador',
         telefone='(61) 92222-2222',
@@ -67,7 +67,7 @@ def criar_usuarios():
     
     org2 = Usuario.objects.create_user(
         username='julia.org',
-        password='senha123',
+        password='Organizador@123',
         email='julia@sgea.local',
         nome='Julia Organizadora',
         telefone='(61) 93333-3333',
@@ -78,7 +78,7 @@ def criar_usuarios():
     # Alunos
     aluno1 = Usuario.objects.create_user(
         username='bruno.aluno',
-        password='senha123',
+        password='Aluno@123',
         email='bruno@sgea.local',
         nome='Bruno Aluno Silva',
         telefone='(61) 94444-4444',
@@ -89,7 +89,7 @@ def criar_usuarios():
     
     aluno2 = Usuario.objects.create_user(
         username='ana.aluna',
-        password='senha123',
+        password='Aluno@123',
         email='ana@sgea.local',
         nome='Ana Paula Aluna',
         telefone='(61) 95555-5555',
@@ -100,7 +100,7 @@ def criar_usuarios():
     
     aluno3 = Usuario.objects.create_user(
         username='pedro.aluno',
-        password='senha123',
+        password='Aluno@123',
         email='pedro@sgea.local',
         nome='Pedro Henrique Costa',
         telefone='(61) 96666-6666',
@@ -112,7 +112,7 @@ def criar_usuarios():
     # Professores
     prof1 = Usuario.objects.create_user(
         username='maria.prof',
-        password='senha123',
+        password='Professor@123',
         email='maria@sgea.local',
         nome='Maria Professora Santos',
         telefone='(61) 97777-7777',
@@ -123,7 +123,7 @@ def criar_usuarios():
     
     prof2 = Usuario.objects.create_user(
         username='joao.prof',
-        password='senha123',
+        password='Professor@123',
         email='joao@sgea.local',
         nome='João Professor Oliveira',
         telefone='(61) 98888-8888',
@@ -131,6 +131,42 @@ def criar_usuarios():
         instituicao=InstituicaoChoices.UCB,
     )
     usuarios.append(prof2)
+
+    # Usuários de Teste Solicitados
+    # Organizador
+    org_teste = Usuario.objects.create_user(
+        username='organizador',
+        password='Admin@123',
+        email='organizador@sgea.com',
+        nome='Organizador de Teste',
+        telefone='(61) 99999-9999',
+        perfil=PerfilChoices.ORGANIZADOR,
+    )
+    usuarios.append(org_teste)
+
+    # Aluno
+    aluno_teste = Usuario.objects.create_user(
+        username='aluno',
+        password='Aluno@123',
+        email='aluno@sgea.com',
+        nome='Aluno de Teste',
+        telefone='(61) 98888-8888',
+        perfil=PerfilChoices.ALUNO,
+        instituicao=InstituicaoChoices.UNB,
+    )
+    usuarios.append(aluno_teste)
+
+    # Professor
+    prof_teste = Usuario.objects.create_user(
+        username='professor',
+        password='Professor@123',
+        email='professor@sgea.com',
+        nome='Professor de Teste',
+        telefone='(61) 97777-7777',
+        perfil=PerfilChoices.PROFESSOR,
+        instituicao=InstituicaoChoices.UNB,
+    )
+    usuarios.append(prof_teste)
     
     print(f"{len(usuarios)} usuarios criados.\n")
     return {u.username: u for u in usuarios}
@@ -367,12 +403,11 @@ def main():
         print(f"  - {Certificado.objects.count()} certificados emitidos")
         
         print("\nCredenciais de acesso:")
-        print("  - Admin: admin / admin123")
-        print("  - Organizador: carlos.org / senha123")
-        print("  - Organizador: julia.org / senha123")
-        print("  - Aluno: bruno.aluno / senha123")
-        print("  - Aluno: ana.aluna / senha123")
-        print("  - Professor: maria.prof / senha123")
+        print("  - Admin: admin / Admin@123")
+        print("  - Organizador: organizador@sgea.com / Admin@123")
+        print("  - Aluno: aluno@sgea.com / Aluno@123")
+        print("  - Professor: professor@sgea.com / Professor@123")
+        print("  - Outros usuarios seguem o padrao: Perfil@123 (ex: Aluno@123, Professor@123)")
         
         print("\nExecute: python manage.py runserver")
         print("Acesse: http://127.0.0.1:8000/\n")

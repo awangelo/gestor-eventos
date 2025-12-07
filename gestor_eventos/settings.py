@@ -128,13 +128,22 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
 # Email Configuration
-# For development, print emails to console
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# For production (example using Gmail):
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'seu-email@gmail.com'
-# EMAIL_HOST_PASSWORD = 'sua-senha-de-app'
-DEFAULT_FROM_EMAIL = 'AEGS <noreply@aegs.local>'
+# ------------------------------------------------------------------------------
+# Opção 1: Imprimir no console (Desenvolvimento)
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Opção 2: Salvar em arquivos (Desenvolvimento/Auditabilidade)
+# EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+# EMAIL_FILE_PATH = BASE_DIR / 'emails_enviados'
+
+# Opção 3: Servidor SMTP Real (Produção/Gmail/Outlook)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'privado'
+EMAIL_HOST_PASSWORD = 'privado'
+# consultar o arquivo com credenciais reais
+
+DEFAULT_FROM_EMAIL = 'AEGS <privado>'
+# colocar o e-mail real de envio aqui

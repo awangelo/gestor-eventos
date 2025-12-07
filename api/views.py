@@ -10,9 +10,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.utils.decorators import method_decorator
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
+from fpdf import FPDF
 
 from .decorators import perfil_required, admin_required, organizador_or_admin_required, aluno_professor_required
 
@@ -25,6 +28,7 @@ from .models import (
 	PerfilChoices,
 	TipoEventoChoices,
 	Usuario,
+	AuditLog,
 )
 from .audit import (
 	log_usuario_criado,
@@ -35,6 +39,7 @@ from .audit import (
 	log_inscricao_atualizada,
 	log_inscricao_cancelada,
 	log_certificado_gerado,
+	log_certificado_consultado,
 	log_login,
 	log_logout,
 )
@@ -902,7 +907,12 @@ class EmissaoCertificadoView(PostFeedbackMixin, TemplateView):
 			log_certificado_gerado(request, certificado)
 			
 			# Send certificate email
-			enviar_email_certificado(certificado)
+			try:
+				enviar_email_certificado(certificado)
+			except Exception as e:
+				# Se falhar o envio do email, não deve impedir a criação do certificado,
+				# mas deve avisar o usuário.
+				messages.warning(request, f"Certificado gerado, mas houve erro ao enviar o e-mail: {e}")
 			
 		except ValidationError as exc:
 			return self.render_post_response(errors=_flatten_validation_errors(exc))
@@ -911,6 +921,111 @@ class EmissaoCertificadoView(PostFeedbackMixin, TemplateView):
 			"Certificado emitido com sucesso." if created else "Certificado atualizado com sucesso."
 		)
 		return self.render_post_response(success=success, clear_data=True)
+
+
+@method_decorator(login_required, name='dispatch')
+class GerarCertificadoPDFView(View):
+	def get(self, request, pk):
+		certificado = get_object_or_404(Certificado, pk=pk)
+		
+		# Check permissions
+		if request.user.perfil in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+			if certificado.inscricao.participante != request.user:
+				messages.error(request, "Você não tem permissão para visualizar este certificado.")
+				return redirect('dashboard')
+		elif request.user.perfil == PerfilChoices.ORGANIZADOR:
+			if certificado.inscricao.evento.organizador != request.user:
+				messages.error(request, "Você não tem permissão para visualizar este certificado.")
+				return redirect('dashboard')
+		# Admin can view all
+		
+		# Generate PDF
+		pdf = FPDF(orientation='L', unit='mm', format='A4')
+		pdf.add_page()
+		
+		# Border
+		pdf.set_line_width(1)
+		pdf.rect(10, 10, 277, 190)
+		pdf.set_line_width(0.5)
+		pdf.rect(12, 12, 273, 186)
+		
+		# Header
+		pdf.set_font("Helvetica", "B", 30)
+		pdf.set_text_color(50, 50, 50)
+		pdf.cell(0, 40, "CERTIFICADO DE PARTICIPACAO", align="C", new_x="LMARGIN", new_y="NEXT")
+		
+		pdf.ln(10)
+		
+		# Body
+		pdf.set_font("Helvetica", "", 16)
+		pdf.set_text_color(0, 0, 0)
+		
+		# Remove accents for FPDF standard fonts or use a unicode font
+		# For simplicity, I'll strip accents or use basic ASCII for now to avoid encoding issues with standard fonts
+		# In a real app, we would load a TTF font.
+		
+		participante_nome = certificado.inscricao.participante.nome
+		evento_titulo = certificado.inscricao.evento.titulo or certificado.inscricao.evento.get_tipo_display()
+		evento_local = certificado.inscricao.evento.local
+		
+		# Simple accent replacement for standard fonts (Latin-1)
+		def clean_text(text):
+			return text.encode('latin-1', 'replace').decode('latin-1')
+
+		try:
+			texto = (
+				f"Certificamos que {participante_nome} participou do evento "
+				f"\"{evento_titulo}\", "
+				f"realizado em {evento_local}, "
+				f"com carga horaria de {certificado.carga_horaria} horas."
+			)
+			# FPDF default fonts support Latin-1
+			texto = texto.encode('latin-1', 'replace').decode('latin-1')
+		except:
+			texto = "Erro na codificacao do texto."
+
+		pdf.multi_cell(0, 10, texto, align="C", new_x="LMARGIN", new_y="NEXT")
+		
+		pdf.ln(20)
+		
+		# Date
+		pdf.set_font("Helvetica", "", 14)
+		data_str = f"Brasilia, {certificado.emitido_em.strftime('%d/%m/%Y')}"
+		pdf.cell(0, 10, data_str, align="C", new_x="LMARGIN", new_y="NEXT")
+		
+		pdf.ln(30)
+		
+		# Signatures
+		pdf.set_line_width(0.5)
+		
+		# Calculate positions for signatures
+		y_pos = pdf.get_y()
+		
+		# Organizer Signature
+		pdf.line(40, y_pos, 120, y_pos)
+		pdf.set_xy(40, y_pos + 2)
+		pdf.set_font("Helvetica", "B", 12)
+		pdf.cell(80, 5, "Organizacao", align="C", new_x="LMARGIN", new_y="NEXT")
+		
+		# System Signature
+		pdf.line(177, y_pos, 257, y_pos)
+		pdf.set_xy(177, y_pos + 2)
+		pdf.cell(80, 5, "AEGS - Gestao de Eventos", align="C", new_x="LMARGIN", new_y="NEXT")
+		
+		# Footer
+		pdf.set_y(-20)
+		pdf.set_font("Helvetica", "I", 8)
+		pdf.set_text_color(128, 128, 128)
+		pdf.cell(0, 10, f"Certificado gerado eletronicamente em {date.today().strftime('%d/%m/%Y')}", align="C")
+		
+		# Output
+		response = HttpResponse(bytes(pdf.output()), content_type='application/pdf')
+		response['Content-Disposition'] = f'attachment; filename="certificado_{certificado.id}.pdf"'
+		
+		# Log access
+		log_certificado_consultado(request, certificado)
+		
+		return response
 
 
 class AutenticacaoView(PostFeedbackMixin, TemplateView):
@@ -1352,3 +1467,32 @@ class PerfilUsuarioView(PostFeedbackMixin, TemplateView):
             return self.render_post_response(errors=["E-mail já está em uso."])
         except Exception as e:
             return self.render_post_response(errors=[f"Erro ao atualizar dados: {str(e)}"])
+
+
+@method_decorator(login_required, name='dispatch')
+@method_decorator(organizador_or_admin_required, name='dispatch')
+class AuditLogView(TemplateView):
+    template_name = 'api/audit_logs.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        logs = AuditLog.objects.all().select_related('usuario', 'usuario_afetado', 'evento')
+        
+        # Filters
+        data_filtro = self.request.GET.get('data')
+        usuario_filtro = self.request.GET.get('usuario')
+        
+        if data_filtro:
+            logs = logs.filter(data_hora__date=data_filtro)
+            
+        if usuario_filtro:
+            logs = logs.filter(
+                Q(usuario__username__icontains=usuario_filtro) | 
+                Q(usuario__nome__icontains=usuario_filtro)
+            )
+            
+        context['logs'] = logs
+        context['data_filtro'] = data_filtro
+        context['usuario_filtro'] = usuario_filtro
+        return context

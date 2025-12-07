@@ -229,8 +229,8 @@ class CertificadoSerializer(serializers.ModelSerializer):
         model = Certificado
         fields = [
             'id', 'inscricao', 'inscricao_detalhes', 'emitido_por', 'emitido_por_detalhes',
-            'codigo', 'carga_horaria', 'emitido_em', 'validade', 'observacoes',
+            'carga_horaria', 'emitido_em', 'validade', 'observacoes',
             'participante_nome', 'evento_titulo', 'evento_tipo'
         ]
-        read_only_fields = ['id', 'codigo', 'emitido_em']
+        read_only_fields = ['id', 'emitido_em']
 

@@ -29,12 +29,14 @@ from api.views import (
     EditarEventoView,
     DeletarEventoView,
     EmissaoCertificadoView,
+    GerarCertificadoPDFView,
     InscricaoUsuarioView,
     PresencaView,
     SignupView,
     logout_view,
     MeusEventosView,
     PerfilUsuarioView,
+    AuditLogView,
 )
 from api.endpoints import (
     # Event endpoints
@@ -56,7 +58,6 @@ from api.endpoints import (
     # Management endpoints
     ParticipantesListView,
     EventoInscricoesListView,
-    AuditLogView,
 )
 
 urlpatterns = [
@@ -94,9 +95,6 @@ urlpatterns = [
     # Participants management
     path('api/participantes/', ParticipantesListView.as_view(), name='api-participantes-list'),
     
-    # Audit logs
-    path('api/audit/', AuditLogView.as_view(), name='api-audit-log'),
-    
     # ============================================================================
     # WEB VIEWS
     # ============================================================================
@@ -112,8 +110,10 @@ urlpatterns = [
     path('inscricao/', InscricaoUsuarioView.as_view(), name='inscricao-usuario'),
     path('presenca/', PresencaView.as_view(), name='presenca'),
     path('certificados/', EmissaoCertificadoView.as_view(), name='emissao-certificado'),
+    path('certificados/<int:pk>/pdf/', GerarCertificadoPDFView.as_view(), name='gerar-certificado-pdf'),
     path('meus-eventos/', MeusEventosView.as_view(), name='meus-eventos'),
     path('perfil/', PerfilUsuarioView.as_view(), name='perfil-usuario'),
+    path('audit-logs/', AuditLogView.as_view(), name='audit-logs'),
     path('eventos/<int:evento_id>/', DetalhesEventoView.as_view(), name='detalhes-evento'),
     path('eventos/<int:evento_id>/editar/', EditarEventoView.as_view(), name='editar-evento'),
     path('eventos/<int:evento_id>/deletar/', DeletarEventoView.as_view(), name='deletar-evento'),

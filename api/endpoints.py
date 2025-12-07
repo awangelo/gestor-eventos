@@ -377,6 +377,13 @@ class CertificadoDetailView(generics.RetrieveAPIView):
         
         # Admin can view any
         return Certificado.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        """Override to log API access."""
+        instance = self.get_object()
+        log_certificado_consultado(request, instance, via_api=True)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     def retrieve(self, request, *args, **kwargs):
         """Override to log certificate access."""

@@ -42,7 +42,7 @@ class Usuario(AbstractUser):
         constraints = [
             models.CheckConstraint(
                 name="instituicao_required_for_aluno_prof",
-                check=(
+                condition=(
                     ~Q(perfil__in=[PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]) |
                     (Q(instituicao__isnull=False) & ~Q(instituicao=""))
                 )
@@ -83,6 +83,7 @@ class Evento(models.Model):
     horario = models.TimeField(null=True, blank=True)
     local = models.CharField(max_length=150)
     capacidade = models.PositiveIntegerField()
+    carga_horaria = models.PositiveIntegerField(default=4, help_text="Carga horária do evento em horas")
     banner = models.ImageField(upload_to='banners/', blank=True, null=True)
     organizador = models.ForeignKey(
         Usuario,
@@ -114,11 +115,11 @@ class Evento(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="evento_data_fim_gte_inicio",
-                check=Q(data_fim__gte=F("data_inicio"))
+                condition=Q(data_fim__gte=F("data_inicio"))
             ),
             models.CheckConstraint(
                 name="capacidade_positive",
-                check=Q(capacidade__gt=0)
+                condition=Q(capacidade__gt=0)
             ),
         ]
 
@@ -179,7 +180,7 @@ class Inscricao(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="inscricao_status_valido",
-                check=Q(status__in=[choice[0] for choice in InscricaoStatus.choices])
+                condition=Q(status__in=[choice[0] for choice in InscricaoStatus.choices])
             ),
         ]
 
@@ -238,12 +239,6 @@ class Certificado(models.Model):
         null=True,
         blank=True
     )
-    codigo = models.CharField(
-        max_length=36,
-        unique=True,
-        editable=False,
-        default=uuid.uuid4,
-    )
     carga_horaria = models.PositiveIntegerField(help_text="Carga horária em horas.")
     emitido_em = models.DateTimeField(auto_now_add=True)
     validade = models.DateField(null=True, blank=True)
@@ -252,7 +247,6 @@ class Certificado(models.Model):
     class Meta:
         ordering = ["-emitido_em"]
         indexes = [
-            models.Index(fields=["codigo"]),
             models.Index(fields=["emitido_por"]),
         ]
 
@@ -266,13 +260,13 @@ class Certificado(models.Model):
             raise ValidationError({
                 "inscricao": "Confirme a presença antes de emitir o certificado."
             })
-        if self.emitido_por.perfil not in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
+        if self.emitido_por and self.emitido_por.perfil not in [PerfilChoices.ADMIN, PerfilChoices.ORGANIZADOR]:
             raise ValidationError({
                 "emitido_por": "Somente administradores ou organizadores podem emitir certificados."
             })
 
     def __str__(self):
-        return f"Certificado {self.codigo} - {self.inscricao.participante}"
+        return f"Certificado - {self.inscricao.participante}"
 
     def save(self, *args, **kwargs):
         self.full_clean()

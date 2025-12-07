@@ -94,7 +94,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='usuario',
-            constraint=models.CheckConstraint(check=models.Q(models.Q(('perfil__in', ['ALUNO', 'PROFESSOR']), _negated=True), models.Q(('instituicao__isnull', False), models.Q(('instituicao', ''), _negated=True)), _connector='OR'), name='instituicao_required_for_aluno_prof'),
+            constraint=models.CheckConstraint(condition=models.Q(models.Q(('perfil__in', ['ALUNO', 'PROFESSOR']), _negated=True), models.Q(('instituicao__isnull', False), models.Q(('instituicao', ''), _negated=True)), _connector='OR'), name='instituicao_required_for_aluno_prof'),
         ),
         migrations.AddIndex(
             model_name='evento',
@@ -110,11 +110,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='evento',
-            constraint=models.CheckConstraint(check=models.Q(('data_fim__gte', models.F('data_inicio'))), name='evento_data_fim_gte_inicio'),
+            constraint=models.CheckConstraint(condition=models.Q(('data_fim__gte', models.F('data_inicio'))), name='evento_data_fim_gte_inicio'),
         ),
         migrations.AddConstraint(
             model_name='evento',
-            constraint=models.CheckConstraint(check=models.Q(('capacidade__gt', 0)), name='capacidade_positive'),
+            constraint=models.CheckConstraint(condition=models.Q(('capacidade__gt', 0)), name='capacidade_positive'),
         ),
         migrations.AddIndex(
             model_name='inscricao',
@@ -126,7 +126,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='inscricao',
-            constraint=models.CheckConstraint(check=models.Q(('status__in', ['PENDENTE', 'CONFIRMADA', 'CANCELADA'])), name='inscricao_status_valido'),
+            constraint=models.CheckConstraint(condition=models.Q(('status__in', ['PENDENTE', 'CONFIRMADA', 'CANCELADA'])), name='inscricao_status_valido'),
         ),
         migrations.AlterUniqueTogether(
             name='inscricao',

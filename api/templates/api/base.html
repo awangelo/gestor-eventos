@@ -19,11 +19,13 @@
                     <a href="{% url 'inscricao-usuario' %}">Inscrições</a>
                     <a href="{% url 'presenca' %}">Presença</a>
                     <a href="{% url 'emissao-certificado' %}">Certificados</a>
+                    <a href="{% url 'audit-logs' %}">Logs</a>
                 {% elif request.user.perfil == 'ORGANIZADOR' %}
                     <a href="{% url 'cadastro-evento' %}">Cadastro de eventos</a>
                     <a href="{% url 'inscricao-usuario' %}">Inscrições</a>
                     <a href="{% url 'presenca' %}">Presença</a>
                     <a href="{% url 'emissao-certificado' %}">Emitir Certificados</a>
+                    <a href="{% url 'audit-logs' %}">Logs</a>
                 {% elif request.user.perfil == 'ALUNO' or request.user.perfil == 'PROFESSOR' %}
                     <a href="{% url 'inscricao-usuario' %}">Fazer Inscrição</a>
                     <a href="{% url 'emissao-certificado' %}">Meus Certificados</a>

@@ -82,7 +82,7 @@
     {% if meus_certificados %}
         {% for certificado in meus_certificados %}
             <article class="prototype-card">
-                <span class="badge">Certificado #{{ certificado.codigo|slice:":8" }}</span>
+                <span class="badge">Certificado</span>
                 <h3>{{ certificado.inscricao.evento.titulo|default:certificado.inscricao.evento.get_tipo_display }}</h3>
                 <ul>
                     <li><strong>Evento:</strong> {{ certificado.inscricao.evento.local }}</li>
@@ -102,7 +102,7 @@
                     {% endif %}
                 </ul>
                 <div class="form-actions">
-                    <button class="btn secondary">Baixar PDF</button>
+                    <a href="{% url 'gerar-certificado-pdf' certificado.pk %}" class="btn secondary" target="_blank">Baixar PDF</a>
                 </div>
             </article>
         {% endfor %}

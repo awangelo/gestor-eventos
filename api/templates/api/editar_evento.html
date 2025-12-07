@@ -8,8 +8,7 @@
     <p>Atualize as informações do evento {{ evento.titulo|default:evento.get_tipo_display }}.</p>
 </section>
 
-<section class="prototype-grid">
-    <article class="prototype-card">
+<div class="prototype-card auth-card" style="max-width: 600px;">
         <span class="badge">Formulário do evento</span>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -111,6 +110,5 @@
                 <button type="submit" class="btn primary">Atualizar evento</button>
             </div>
         </form>
-    </article>
-</section>
+</div>
 {% endblock %}
