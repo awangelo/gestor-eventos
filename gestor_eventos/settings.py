@@ -141,9 +141,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'aegsdjango@gmail.com'
-EMAIL_HOST_PASSWORD = 'csdy uwzd kuzr trgn'
+EMAIL_HOST_USER = 'privado'
+EMAIL_HOST_PASSWORD = 'privado'
 # consultar o arquivo com credenciais reais
 
-DEFAULT_FROM_EMAIL = 'AEGS <aegsdjango@gmail.com>'
+DEFAULT_FROM_EMAIL = 'AEGS <privado>'
 # colocar o e-mail real de envio aqui
