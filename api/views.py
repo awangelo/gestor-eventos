@@ -1041,7 +1041,18 @@ class AutenticacaoView(PostFeedbackMixin, TemplateView):
 			errors.append("Informe usuário/e-mail e senha.")
 			return self.render_post_response(errors=errors)
 
+		# Try to authenticate with username first
 		user = authenticate(request, username=username, password=password)
+		
+		# If authentication fails and input looks like an email, try email authentication
+		if user is None and '@' in username:
+			try:
+				from api.models import Usuario
+				usuario_obj = Usuario.objects.get(email=username)
+				user = authenticate(request, username=usuario_obj.username, password=password)
+			except Usuario.DoesNotExist:
+				pass
+		
 		if user is None:
 			return self.render_post_response(errors=["Credenciais inválidas."])
 
@@ -1191,26 +1202,54 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 		evento_id = self.kwargs.get('evento_id')
 		evento = get_object_or_404(Evento, pk=evento_id)
 		
-		# Handle cancellation request from Aluno/Professor
-		if 'cancel_inscricao' in request.POST:
-			if request.user.perfil not in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
-				return self.render_post_response(errors=["Você não tem permissão para cancelar inscrições."])
+		# Handle new inscription from Aluno/Professor (self-registration)
+		if request.user.perfil in [PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]:
+			# Check if it's a cancellation request
+			if 'cancel_inscricao' in request.POST:
+				try:
+					inscricao = Inscricao.objects.get(
+						evento_id=evento_id,
+						participante=request.user
+					)
+					status_anterior = inscricao.status
+					inscricao.status = InscricaoStatus.CANCELADA
+					inscricao.save()
+					
+					# Log cancellation
+					log_inscricao_cancelada(request, inscricao)
+					
+					return self.render_post_response(success="Sua inscrição foi cancelada com sucesso.", clear_data=True)
+				except Inscricao.DoesNotExist:
+					return self.render_post_response(errors=["Você não possui inscrição neste evento."])
 			
+			# Otherwise, it's a new inscription request
+			# Check if already inscribed
+			existing_inscricao = Inscricao.objects.filter(
+				evento_id=evento_id,
+				participante=request.user
+			).first()
+			
+			if existing_inscricao:
+				return self.render_post_response(errors=["Você já está inscrito neste evento."])
+			
+			# Check available slots
+			if evento.vagas_disponiveis <= 0:
+				return self.render_post_response(errors=["O evento não possui vagas disponíveis."])
+			
+			# Create inscription
 			try:
-				inscricao = Inscricao.objects.get(
+				inscricao = Inscricao.objects.create(
 					evento_id=evento_id,
-					participante=request.user
+					participante=request.user,
+					status=InscricaoStatus.PENDENTE,
 				)
-				status_anterior = inscricao.status
-				inscricao.status = InscricaoStatus.CANCELADA
-				inscricao.save()
 				
-				# Log cancellation
-				log_inscricao_cancelada(request, inscricao)
+				# Log creation
+				log_inscricao_criada(request, inscricao)
 				
-				return self.render_post_response(success="Sua inscrição foi cancelada com sucesso.", clear_data=True)
-			except Inscricao.DoesNotExist:
-				return self.render_post_response(errors=["Você não possui inscrição neste evento."])
+				return self.render_post_response(success="Inscrição realizada com sucesso! Aguarde a confirmação.", clear_data=True)
+			except Exception as e:
+				return self.render_post_response(errors=[f"Erro ao realizar inscrição: {str(e)}"])
 		
 		# Rest is for ADMIN/Organizador managing inscricoes
 		# Check permission

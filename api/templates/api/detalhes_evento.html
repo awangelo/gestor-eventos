@@ -107,10 +107,15 @@
         <div class="form-actions" style="margin-top: 2rem;">
             <a href="{% url 'inscricao-usuario' %}" class="btn secondary">← Voltar</a>
             {% if request.user.perfil == 'ALUNO' or request.user.perfil == 'PROFESSOR' %}
-                {% if evento.vagas_disponiveis > 0 %}
-                    <a href="{% url 'inscricao-usuario' %}" class="btn primary">Fazer Inscrição</a>
-                {% else %}
-                    <span class="btn secondary" style="opacity: 0.5; cursor: not-allowed;">Sem Vagas</span>
+                {% if not user_inscricao %}
+                    {% if evento.vagas_disponiveis > 0 %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn primary">Fazer Inscrição</button>
+                        </form>
+                    {% else %}
+                        <span class="btn secondary" style="opacity: 0.5; cursor: not-allowed;">Sem Vagas</span>
+                    {% endif %}
                 {% endif %}
             {% endif %}
             {% if request.user.perfil == 'ADMIN' or request.user == evento.organizador %}
