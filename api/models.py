@@ -42,7 +42,7 @@ class Usuario(AbstractUser):
         constraints = [
             models.CheckConstraint(
                 name="instituicao_required_for_aluno_prof",
-                condition=(
+                check=(
                     ~Q(perfil__in=[PerfilChoices.ALUNO, PerfilChoices.PROFESSOR]) |
                     (Q(instituicao__isnull=False) & ~Q(instituicao=""))
                 )
@@ -115,11 +115,11 @@ class Evento(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="evento_data_fim_gte_inicio",
-                condition=Q(data_fim__gte=F("data_inicio"))
+                check=Q(data_fim__gte=F("data_inicio"))
             ),
             models.CheckConstraint(
                 name="capacidade_positive",
-                condition=Q(capacidade__gt=0)
+                check=Q(capacidade__gt=0)
             ),
         ]
 
@@ -180,7 +180,7 @@ class Inscricao(models.Model):
         constraints = [
             models.CheckConstraint(
                 name="inscricao_status_valido",
-                condition=Q(status__in=[choice[0] for choice in InscricaoStatus.choices])
+                check=Q(status__in=[choice[0] for choice in InscricaoStatus.choices])
             ),
         ]
 
