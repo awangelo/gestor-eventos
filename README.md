@@ -60,7 +60,24 @@ Projeto Django para cadastro de usuários, gerenciamento de eventos acadêmicos,
 
 	> Outros usuários de exemplo também são criados com o padrão `Perfil@123`.
 
-6. Suba o servidor de desenvolvimento:
+6. **Configuração de E-mail (Opcional):**
+
+	O sistema envia e-mails automáticos para confirmação de inscrições e notificações de certificados. Por padrão, os e-mails são impressos no console do servidor (modo desenvolvimento).
+
+	Para configurar envio real de e-mails via SMTP (ex.: Gmail), edite `gestor_eventos/settings.py` e descomente as linhas do backend SMTP, ajustando as credenciais:
+
+	```python
+	EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+	EMAIL_HOST = 'smtp.gmail.com'
+	EMAIL_PORT = 587
+	EMAIL_USE_TLS = True
+	EMAIL_HOST_USER = 'seu-email@gmail.com'
+	EMAIL_HOST_PASSWORD = 'sua-senha-de-app'  # Use senha de app para Gmail
+	```
+
+	> **Nota:** Para Gmail, ative a autenticação de dois fatores e gere uma senha de app. Para desenvolvimento, mantenha o backend console para evitar problemas de conectividade.
+
+7. Suba o servidor de desenvolvimento:
 
 	```bash
 	python manage.py runserver
