@@ -127,13 +127,16 @@ def _flatten_validation_errors(error: ValidationError) -> list[str]:
 class PostFeedbackMixin:
 	success_context_name = "form_success"
 	error_context_name = "form_errors"
+	warning_context_name = "form_warnings"
 	data_context_name = "form_data"
 
-	def render_post_response(self, *, errors: list[str] | None = None, success: str | None = None, clear_data: bool = False, **kwargs):
+	def render_post_response(self, *, errors: list[str] | None = None, warnings: list[str] | None = None, success: str | None = None, clear_data: bool = False, **kwargs):
 		context = self.get_context_data(**kwargs)
 		context[self.data_context_name] = {} if clear_data else self.request.POST.dict()
 		if errors:
 			context[self.error_context_name] = errors
+		if warnings:
+			context[self.warning_context_name] = warnings
 		if success:
 			context[self.success_context_name] = success
 		return self.render_to_response(context)
@@ -1234,7 +1237,7 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 			
 			# Check available slots
 			if evento.vagas_disponiveis <= 0:
-				return self.render_post_response(errors=["O evento não possui vagas disponíveis."])
+				return self.render_post_response(warnings=["O evento não possui vagas disponíveis."])
 			
 			# Create inscription
 			try:
