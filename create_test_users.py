@@ -35,12 +35,12 @@ organizador, created = Usuario.objects.get_or_create(
     }
 )
 if created:
-    organizador.set_password('Admin@123')
+    organizador.set_password('Organizador@123')
     organizador.save()
     print(f"✓ ORGANIZADOR criado: {organizador.username}")
 else:
     organizador.email = 'organizador@sgea.com'
-    organizador.set_password('Admin@123')
+    organizador.set_password('Organizador@123')
     organizador.save()
     print(f"  ORGANIZADOR atualizado: {organizador.username}")
 
@@ -88,6 +88,6 @@ else:
 
 print("\n=== Usuários de teste criados/atualizados ===")
 print("Admin:       username='admin'       password='Admin@123'")
-print("Organizador: username='organizador' password='Admin@123'")
+print("Organizador: username='organizador' password='Organizador@123'")
 print("Aluno:       username='aluno'       password='Aluno@123'")
 print("Professor:   username='professor'   password='Professor@123'")

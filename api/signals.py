@@ -1,8 +1,9 @@
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, pre_save
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
-from .models import Usuario, Evento, Inscricao, Certificado, AcaoAuditoriaChoices
+from .models import Usuario, Evento, Inscricao, Certificado, AcaoAuditoriaChoices, InscricaoStatus
 from .audit import log_action
+from .emails import enviar_email_inscricao
 
 @receiver(user_logged_in)
 def log_user_login(sender, request, user, **kwargs):
@@ -35,6 +36,17 @@ def log_evento_save(sender, instance, created, **kwargs):
         descricao=f"Evento '{instance.titulo}' {'criado' if created else 'atualizado'}."
     )
 
+@receiver(pre_save, sender=Inscricao)
+def capture_inscricao_pre_save(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            old_instance = Inscricao.objects.get(pk=instance.pk)
+            instance._old_status = old_instance.status
+        except Inscricao.DoesNotExist:
+            instance._old_status = None
+    else:
+        instance._old_status = None
+
 @receiver(post_save, sender=Inscricao)
 def log_inscricao_save(sender, instance, created, **kwargs):
     if created:
@@ -45,6 +57,9 @@ def log_inscricao_save(sender, instance, created, **kwargs):
             evento=instance.evento,
             descricao=f"Inscrição realizada para {instance.participante.nome} no evento {instance.evento.titulo}"
         )
+        # Se criada já como confirmada, envia email
+        if instance.status == InscricaoStatus.CONFIRMADA:
+            enviar_email_inscricao(instance)
     else:
         # Log status changes if needed, or generic update
         log_action(
@@ -54,6 +69,11 @@ def log_inscricao_save(sender, instance, created, **kwargs):
             evento=instance.evento,
             descricao=f"Inscrição atualizada para {instance.participante.nome} no evento {instance.evento.titulo}. Status: {instance.status}"
         )
+        
+        # Verifica mudança de status para CONFIRMADA
+        if hasattr(instance, '_old_status'):
+            if instance._old_status != InscricaoStatus.CONFIRMADA and instance.status == InscricaoStatus.CONFIRMADA:
+                enviar_email_inscricao(instance)
 
 @receiver(post_save, sender=Certificado)
 def log_certificado_save(sender, instance, created, **kwargs):

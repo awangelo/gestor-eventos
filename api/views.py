@@ -45,7 +45,6 @@ from .audit import (
 )
 from .emails import (
 	enviar_email_boas_vindas,
-	enviar_email_inscricao,
 	enviar_email_certificado,
 )
 
@@ -1283,9 +1282,6 @@ class DetalhesEventoView(PostFeedbackMixin, TemplateView):
 			
 			# Log creation
 			log_inscricao_criada(request, inscricao)
-			
-			# Send confirmation email
-			enviar_email_inscricao(inscricao)
 			
 		except ValidationError as exc:
 			errors.extend(_flatten_validation_errors(exc))

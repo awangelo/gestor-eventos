@@ -136,7 +136,7 @@ def criar_usuarios():
     # Organizador
     org_teste = Usuario.objects.create_user(
         username='organizador',
-        password='Admin@123',
+        password='Organizador@123',
         email='organizador@sgea.com',
         nome='Organizador de Teste',
         telefone='(61) 99999-9999',
@@ -404,7 +404,7 @@ def main():
         
         print("\nCredenciais de acesso:")
         print("  - Admin: admin / Admin@123")
-        print("  - Organizador: organizador@sgea.com / Admin@123")
+        print("  - Organizador: organizador@sgea.com / Organizador@123")
         print("  - Aluno: aluno@sgea.com / Aluno@123")
         print("  - Professor: professor@sgea.com / Professor@123")
         print("  - Outros usuarios seguem o padrao: Perfil@123 (ex: Aluno@123, Professor@123)")
